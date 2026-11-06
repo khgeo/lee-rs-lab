@@ -31,8 +31,7 @@ jobs:
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" lee_rs_lab.zip docs/downloads/lee-rs-lab-manual-km.pdf --clobber
           else
+            printf '%s\n\n📖 Manual: https://khgeo.github.io/lee-rs-lab/\n' "$notes" > notes.md
             gh release create "$tag" lee_rs_lab.zip docs/downloads/lee-rs-lab-manual-km.pdf \
-              --title "LEE RS Lab ${tag#v}" --notes "$notes
-
-📖 Manual: https://khgeo.github.io/lee-rs-lab/"
+              --title "LEE RS Lab ${tag#v}" --notes-file notes.md
           fi
