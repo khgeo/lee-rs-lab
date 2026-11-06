@@ -1,4 +1,7 @@
 """Small matplotlib chart dialogs + the spectral profile (pixel signature) map tool."""
+import re as _re
+import warnings as _warnings
+
 import numpy as np
 from osgeo import gdal
 from qgis.core import QgsCoordinateTransform, QgsProject
@@ -61,8 +64,6 @@ def _khmer_fonts():
 # the words come out as boxes or broken clusters. Qt shapes Khmer correctly with the system font, so every
 # Khmer text in a figure (title, tick labels, legend, axis labels) is drawn by Qt into a small transparent
 # image and pinned onto the original text, which stays in place (invisible) for layout.
-import re as _re
-import warnings as _warnings
 
 _KH = _re.compile("[\u1780-\u17FF\u19E0-\u19FF]")
 _warnings.filterwarnings("ignore", message=r"Glyph \d+ .*missing from font")

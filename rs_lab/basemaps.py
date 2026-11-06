@@ -78,7 +78,7 @@ def _add_and_show(bid, tr):
 
 def remove_basemaps():
     proj = QgsProject.instance()
-    ids = [l.id() for l in proj.mapLayers().values() if l.customProperty("rslab_basemap")]
+    ids = [lyr.id() for lyr in proj.mapLayers().values() if lyr.customProperty("rslab_basemap")]
     if ids:
         proj.removeMapLayers(ids)
     return len(ids)

@@ -103,7 +103,7 @@ def build_html(session, canvas, classes):
         top = sorted(sup["areas"], key=lambda r: -r[2])[:3]
         names = {c[0]: c[1] for c in classes}
         find.append(tr("Largest classes: %s") % ", ".join("%s (%.1f%%)" % (names.get(v, v), pct)
-                                                           for v, _, _, pct in top))
+                                                          for v, _, _, pct in top))
     if acc:
         find.append(tr("Overall accuracy %.1f%%, kappa %.3f (n = %d)") % (100 * acc["oa"], acc["kappa"], acc["n"]))
         if acc["oa"] < 0.85:
@@ -153,7 +153,7 @@ def build_html(session, canvas, classes):
         if adj:
             out.append("<h3>%s (Olofsson et al. 2014)</h3>" % tr("Area-adjusted estimates"))
             out.append("<p>%s: %.2f%% ± %.2f%%</p>" % (tr("Area-weighted overall accuracy"), 100 * adj["oa"],
-                                                      100 * adj["oa_ci"]))
+                                                       100 * adj["oa_ci"]))
             out.append(_table([tr("Class"), tr("Mapped (ha)"), tr("Estimated (ha)"), tr("± 95% CI (ha)"),
                                tr("Producer's acc.")],
                               [[labs[i], adj["mapped_ha"][i], adj["area_ha"][i], adj["ci_ha"][i], adj["pa"][i]]

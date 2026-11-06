@@ -82,8 +82,8 @@ def _http_json(url, body=None, timeout=90, tries=4):
     for a in range(tries):
         try:
             req = urllib.request.Request(web_url(url), data=data, headers={"User-Agent": "QGIS-RS-Lab/1.2",  # noqa: S310  # nosec B310
-                                                                  "Content-Type": "application/json",
-                                                                  "Accept": "application/geo+json, application/json"})
+                                                                           "Content-Type": "application/json",
+                                                                           "Accept": "application/geo+json, application/json"})
             with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310  # nosec B310
                 return json.load(r)
         except urllib.error.HTTPError as e:
@@ -551,4 +551,3 @@ def download(task, source, sensor, geom_4326, start, end, max_cloud, method, ban
 def estimate_mb(geom_4326, epsg, scale, nbands, nscenes):
     g = Grid(geom_4326, epsg, scale)
     return g.W * g.H * nbands * 4 * max(1, nscenes) / 1e6, g.W * g.H * nbands * 2 / 1e6
-

@@ -309,6 +309,7 @@ class Image:
         r = self._bin(o, lambda a, b: fn(a, b).astype("float32"))
         r.data[~np.isfinite(self.data)] = np.nan
         return r
+
     def gt(self, o): return self._cmp(o, np.greater)
     def gte(self, o): return self._cmp(o, np.greater_equal)
     def lt(self, o): return self._cmp(o, np.less)
@@ -322,6 +323,7 @@ class Image:
     def Not(self): return Image((~(self.data > 0)).astype("float32"), self.names, self.grid, self.props)
     def abs(self): return Image(np.abs(self.data), self.names, self.grid, self.props, self.roles)
     def sqrt(self): return Image(np.sqrt(self.data), self.names, self.grid, self.props, self.roles)
+
     def log10(self):
         with np.errstate(all="ignore"):
             return Image(np.log10(self.data), self.names, self.grid, self.props, self.roles)
@@ -694,7 +696,7 @@ class ImageCollection:
                 p["date"] = (p.get("datetime") or p.get("start_datetime") or "")[:10]
                 out.append((p, files[it["id"]]))
         CTX.log("  %d image(s) read in %.0f s (%d px × %d px @ %g m)" % (len(out), time.time() - t0, grid.W, grid.H,
-                                                                          grid.scale))
+                                                                         grid.scale))
         if not out:
             raise ValueError("%s: nothing could be read (all cloudy or no internet)." % self.key)
         return grid, bands, out

@@ -284,4 +284,3 @@ class RSLab:
             self.aoi_band.reset(_polygon_type())
             self.iface.mapCanvas().scene().removeItem(self.aoi_band)
             self.aoi_band = None
-

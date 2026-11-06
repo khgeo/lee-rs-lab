@@ -1314,7 +1314,7 @@ class Panel(QWidget):
             out = os.path.join(tempfile.mkdtemp(prefix="rslab_ql_"), "quicklook.tif")
         else:
             out = self._out_path("%s_%s_%s_%s_%s" % (p["sensor"], src.split("_")[0], p["start"].replace("-", ""),
-                                                      p["end"].replace("-", ""), method))
+                                                     p["end"].replace("-", ""), method))
         descs = [catalog.band_desc(b, r, w) for b, r, w in chosen]
         meta = dict(RSLAB_SENSOR=p["sensor"], RSLAB_PRODUCT=product, RSLAB_START=p["start"], RSLAB_END=p["end"],
                     RSLAB_METHOD=method, RSLAB_SCALE=s["scale"] if product == "raw" else 1.0,
@@ -1346,7 +1346,7 @@ class Panel(QWidget):
             else:
                 P._after_download(res["path"], p, bands, product, epsg, src_text)
                 P.msg(tr("Saved %s") % res["path"] + " — " + tr("%d scenes used.") % res["n_scenes"] +
-                         " (%.0f s)" % res.get("seconds", 0), "ok")
+                      " (%.0f s)" % res.get("seconds", 0), "ok")
         t = self._task(tr("Downloading imagery (%s)") % self.src.currentText().split(" (")[0], job, on_done=done)
         self._bind_progress(t, "dl_prog")
         self.dl_prog.setValue(0)
@@ -1502,7 +1502,7 @@ class Panel(QWidget):
                     self.preset.addItem(tr(name), [info.roles[r] for r in roles] + [note])
             if "vv" in info.roles and "vh" in info.roles:
                 self.preset.addItem(tr("SAR (VV, VH, VV)"), [info.roles["vv"], info.roles["vh"], info.roles["vv"],
-                                                            "Radar: urban bright, water dark, vegetation green-ish."])
+                                                             "Radar: urban bright, water dark, vegetation green-ish."])
         self.preset.blockSignals(False)
         if self.preset.count() > 1:
             self.preset.setCurrentIndex(1)
@@ -1580,7 +1580,7 @@ class Panel(QWidget):
             self.tag(l2, "Enhanced", sfx)
             self.msg(tr("Saved %s") % res["path"], "ok")
         self._task(tr("Enhancing image"), procs.enhance,
-                  (layer_path(lyr), rgb, k, out_dir, self.plo.value(), self.phi.value(), self.nstd.value(),
+                   (layer_path(lyr), rgb, k, out_dir, self.plo.value(), self.phi.value(), self.nstd.value(),
                    self.gamma.value(), "enhanced_%d%d%d_%s" % (rgb + (k,))), on_done=done)
 
     def show_hist(self):
@@ -1736,7 +1736,7 @@ class Panel(QWidget):
             fill(self.idx_res, rows)
             self.msg(tr("Indices computed."), "ok")
         self._task(tr("Computing indices"), procs.compute_indices,
-                  (layer_path(lyr), self.roles_from_table(), names, self.out_dir(), custom, sc, off,
+                   (layer_path(lyr), self.roles_from_table(), names, self.out_dir(), custom, sc, off,
                    self.otsu.isChecked()), on_done=done)
 
     # ============================================================ 4 FILTERS & PCA
@@ -1808,7 +1808,7 @@ class Panel(QWidget):
             else:
                 self.msg(err, "err")
         self._task(tr("Filtering"), procs.spatial_filter,
-                  (layer_path(lyr), self.f_band.currentData(), k, self.out_dir(), self.f_k.value(),
+                   (layer_path(lyr), self.f_band.currentData(), k, self.out_dir(), self.f_k.value(),
                    self.f_sigma.value()), on_done=done)
 
     def run_pca(self):
@@ -1897,7 +1897,7 @@ class Panel(QWidget):
         self.u_after.setVisible(False)
         lay.addWidget(self.u_after)
         self.on_u_method()
-        self.u_raster.layerChanged.connect(lambda l: self.fill_band_list(l, self.u_bands))
+        self.u_raster.layerChanged.connect(lambda lyr: self.fill_band_list(lyr, self.u_bands))
         self.fill_band_list(self.u_raster.currentLayer(), self.u_bands)
 
     def on_u_method(self):
@@ -1929,9 +1929,9 @@ class Panel(QWidget):
             self.style_clusters()
             self.msg(tr("%d clusters.") % res["k"], "ok")
         self._task(tr("Clustering"), procs.unsupervised,
-                  (layer_path(lyr), bands, m, self.u_k.value(), self.out_dir(), self.u_it.value(),
+                   (layer_path(lyr), bands, m, self.u_k.value(), self.out_dir(), self.u_it.value(),
                    self.u_sample.value(), self.u_kmin.value(), self.u_kmax.value(), self.u_maj.value()),
-                  on_done=done)
+                   on_done=done)
 
     def style_clusters(self):
         res = self.session.get("unsupervised")
@@ -2080,7 +2080,7 @@ class Panel(QWidget):
             for r in csv.reader(f):
                 if len(r) >= 2 and r[0].strip().isdigit():
                     out.append([int(r[0]), r[1].strip(), (r[2].strip() if len(r) > 2 and r[2].strip() else
-                                                           rio.PALETTE[(int(r[0]) - 1) % len(rio.PALETTE)])])
+                                                          rio.PALETTE[(int(r[0]) - 1) % len(rio.PALETTE)])])
         if out:
             self.session["classes"] = out
             self.render_classes()
@@ -2356,7 +2356,7 @@ class Panel(QWidget):
             self.msg(tr("%d training points: %s") % (res["n"], ", ".join(
                 "%s %d" % (names.get(k, k), v) for k, v in sorted(res["counts"].items()))), "ok")
         self._task(tr("Training points from WorldCover"), procs.training_from_reference,
-                  (layer_path(img), layer_path(wc), self.WC_TO_AUTO7, self.wc_n.value(), out), on_done=done)
+                   (layer_path(img), layer_path(wc), self.WC_TO_AUTO7, self.wc_n.value(), out), on_done=done)
 
     def style_training(self, vl):
         rio.set_vector_classes(vl, self.classes(), "class_id")
@@ -2483,7 +2483,7 @@ class Panel(QWidget):
             self._pending_change = None
             self.msg(tr("Classification finished."), "ok")
         self._task(tr("Classifying"), procs.supervised,
-                  (layer_path(lyr), bands, vec, ln, fld, k, params, self.out_dir(), self.s_maj.value(),
+                   (layer_path(lyr), bands, vec, ln, fld, k, params, self.out_dir(), self.s_maj.value(),
                    path2), on_done=done)
 
     def render_sup(self):
@@ -2619,8 +2619,8 @@ class Panel(QWidget):
             self.lb_next_empty()
         n_total = procs.cochran_n(self.a_p.value(), self.a_e.value())
         self._task(tr("Sampling points"), procs.sample_points_design,
-                  (layer_path(lyr), self.a_design.currentData(), self.a_n.value(), n_total, self.a_min.value(), out),
-                  on_done=done)
+                   (layer_path(lyr), self.a_design.currentData(), self.a_n.value(), n_total, self.a_min.value(), out),
+                   on_done=done)
 
     def update_cochran(self, *_):
         d = self.a_design.currentData()
@@ -2715,8 +2715,8 @@ class Panel(QWidget):
         ref = f[fld]
         done_n = sum(1 for g in vl.getFeatures() if g[fld] not in (None, 0, "") and str(g[fld]) != "NULL")
         txt = "%s %d / %d · %s: <b>%s</b>" % (tr("Point"), self.lb_i + 1, len(self._lb_fids), tr("label"),
-                                             names.get(ref, ref) if ref not in (None, 0, "") and str(ref) != "NULL"
-                                             else "—")
+                                              names.get(ref, ref) if ref not in (None, 0, "") and str(ref) != "NULL"
+                                              else "—")
         if self.lb_hint.isChecked() and vl.fields().indexOf("map_class") >= 0:
             txt += " · %s: %s" % (tr("map"), names.get(f["map_class"], f["map_class"]))
         txt += " · %s %d/%d" % (tr("done"), done_n, len(self._lb_fids))
@@ -2898,7 +2898,7 @@ class Panel(QWidget):
             self.v_info.setText(txt)
             self.msg(txt, "ok")
         self._task(tr("Clean up & export polygons"), procs.sieve_vectorize,
-                  (layer_path(lyr), self.v_mmu.value(), self.v_eight.isChecked(), self.v_poly.isChecked(),
+                   (layer_path(lyr), self.v_mmu.value(), self.v_eight.isChecked(), self.v_poly.isChecked(),
                    self.out_dir(), names), on_done=done)
 
     # ============================================================ map layout (from the GEE LULC Toolkit)
@@ -3103,8 +3103,8 @@ class Panel(QWidget):
         pl.addLayout(row(btn(tr("Map this change"), self.map_transition, primary=True), "stretch"))
         self.ch_post.setVisible(False)
         lay.addWidget(self.ch_post)
-        self.ch1.layerChanged.connect(lambda l: self.fill_bands(l, [self.chb1]))
-        self.ch2.layerChanged.connect(lambda l: self.fill_bands(l, [self.chb2]))
+        self.ch1.layerChanged.connect(lambda lyr: self.fill_bands(lyr, [self.chb1]))
+        self.ch2.layerChanged.connect(lambda lyr: self.fill_bands(lyr, [self.chb2]))
         self.ch_mode.currentIndexChanged.connect(self.on_ch_mode)
         self.on_ch_mode()
 
@@ -3266,7 +3266,7 @@ class Panel(QWidget):
         names = {c[0]: c[1] for c in self.classes()}
         tag = "%s → %s" % (names.get(a, "any") if a is not None else "any", names.get(b, "any") if b is not None else "any")
         out = os.path.join(self.out_dir(), "transition_%s_%s.tif" % (a if a is not None else "any",
-                                                                      b if b is not None else "any"))
+                                                                     b if b is not None else "any"))
         rio.write_array(out, m.astype("uint8"), info, gdal.GDT_Byte, 0)
         col = next((c[2] for c in self.classes() if c[0] == b), "#e31a1c")
         lyr = rio.add_class_layer(out, self.name("Change", " " + tag), [(1, "%s → %s", col,
@@ -3311,7 +3311,7 @@ class Panel(QWidget):
             return
         mode = self.ch_mode.currentData()
         if mode == "post":
-            bad = [n for n, l in ((tr("Date 1"), l1), (tr("Date 2"), l2)) if not self._is_class_map(l)]
+            bad = [n for n, lyr in ((tr("Date 1"), l1), (tr("Date 2"), l2)) if not self._is_class_map(lyr)]
             if bad:
                 why = tr("%s is an image, not a classified map. From → to needs two classified maps: classify each "
                          "date first (3 Classify › Supervised — classify › 'Also classify another date'), or choose "
@@ -3341,7 +3341,7 @@ class Panel(QWidget):
                                                                           for v, _, a, _ in res["areas"])}
                 self.msg(tr("Change map created."), "ok")
             self._task(tr("Change detection"), procs.change_difference,
-                      (layer_path(l1), self.chb1.currentData() or 1, layer_path(l2), self.chb2.currentData() or 1,
+                       (layer_path(l1), self.chb1.currentData() or 1, layer_path(l2), self.chb2.currentData() or 1,
                        self.ch_k.value(), self.out_dir()), on_done=done)
         else:
             def done(ok, res, err):
@@ -3363,7 +3363,7 @@ class Panel(QWidget):
                 self.render_change()
                 self.msg(s, "ok")
             self._task(tr("Change detection"), procs.change_postclass, (layer_path(l1), layer_path(l2), self.out_dir()),
-                      on_done=done)
+                       on_done=done)
 
     # ============================================================ more datasets (generated LEE scripts)
     DATASET_CHOICES = [
@@ -3775,4 +3775,3 @@ class Panel(QWidget):
         for t in (self.rect_tool, self.profile_tool):
             if t is not None and self.canvas.mapTool() is t:
                 self.canvas.unsetMapTool(t)
-

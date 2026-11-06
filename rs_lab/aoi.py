@@ -340,7 +340,7 @@ class CkanAdmin(VectorAdmin):
             except Exception as e:  # noqa: BLE001
                 errors.append("%s: %s" % (os.path.basename(fn), e))
                 continue
-            if self._scan() and all(l in self.layers for l in (1, 2, 3)):
+            if self._scan() and all(lev in self.layers for lev in (1, 2, 3)):
                 break
         if not self._scan():
             raise IOError("; ".join(errors) or "no polygon layers with names found")
@@ -440,7 +440,7 @@ class AdminLoadTask(QgsTask):
             try:
                 if s["type"] == "ckan":
                     b = CkanAdmin(s, self.iso3)
-                    if not b.ready() or not all(b.has_level(l) for l in (1, 2)):
+                    if not b.ready() or not all(b.has_level(lev) for lev in (1, 2)):
                         b.download(self)
                     if b.ready():
                         self.backend = b
@@ -500,4 +500,3 @@ class RectangleTool(QgsMapTool):
     def deactivate(self):
         self.rb.reset(_poly())
         super().deactivate()
-
