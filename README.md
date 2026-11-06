@@ -13,7 +13,7 @@ workflow on your own computer: composites, band combinations, indices, filters, 
 classification, accuracy assessment (Cochran sampling, Olofsson area-adjusted estimates), from → to change detection
 with a Sankey diagram, map layout, a PDF report, and Earth-Engine-style scripts (32 examples).
 
-![Change detection 2024 → 2026](docs/assets/img/f34.jpg)
+<img src="docs/assets/img/cover.jpg" alt="LEE RS Lab manual cover" width="360" align="right">
 
 ## 📖 Manual (Khmer, 15 lessons)
 
@@ -32,11 +32,12 @@ whose red numbers match the steps.
 
 ## Install the plugin
 
-From QGIS: **Plugins › Manage and Install Plugins › Settings › Show also experimental plugins**, then search *LEE RS Lab* (once it is approved on plugins.qgis.org). Or from the zip:
+1. QGIS 3.22 – 3.44 → **Plugins › Manage and Install Plugins…**
+2. **Settings** tab → tick **Show also experimental plugins** (LEE RS Lab is experimental for now).
+3. **All** tab → search **LEE RS Lab** → **Install Plugin**. QGIS then offers updates automatically.
+4. Click the LEE RS Lab icon on the toolbar. Optional: *1 Data › Setup › Install scikit-learn* for Random Forest, SVM and kNN.
 
-1. Download **lee_rs_lab.zip** from [Releases](https://github.com/khgeo/lee-rs-lab/releases/latest).
-2. QGIS 3.22 – 3.44 → **Plugins › Manage and Install Plugins › Install from ZIP** → choose the zip → **Install Plugin**.
-3. Click the LEE RS Lab icon on the toolbar. Optional: *1 Data › Setup › Install scikit-learn* for Random Forest, SVM and kNN.
+Offline classroom? Download **lee_rs_lab.zip** from [Releases](https://github.com/khgeo/lee-rs-lab/releases/latest) and use **Install from ZIP** instead.
 
 The **Help** button in the plugin opens a short offline guide with a link to this manual.
 

@@ -1,7 +1,9 @@
 # សៀវភៅណែនាំ LEE RS Lab
 
+![សៀវភៅណែនាំ LEE RS Lab](assets/img/cover.jpg){ width="340" align=right }
+
 !!! tip "ទាញយក"
-    - **កម្មវិធីជំនួយ QGIS៖** [lee_rs_lab.zip](https://github.com/khgeo/lee-rs-lab/releases/latest) (Plugins › Manage and Install Plugins › Install from ZIP)
+    - **កម្មវិធីជំនួយ QGIS៖** ស្វែងរក *LEE RS Lab* ក្នុង Plugins › Manage and Install Plugins (ឬ [lee_rs_lab.zip](https://github.com/khgeo/lee-rs-lab/releases/latest))
     - **សៀវភៅជា PDF (បោះពុម្ព ឬអានគ្មានអ៊ីនធឺណិត)៖** [lee-rs-lab-manual-km.pdf](downloads/lee-rs-lab-manual-km.pdf)
     - **កូដប្រភព៖** [github.com/khgeo/lee-rs-lab](https://github.com/khgeo/lee-rs-lab)
 
@@ -17,13 +19,18 @@ LEE RS Lab ជាកម្មវិធីជំនួយ (Plugin) QGIS សម្
 
 - QGIS 3.22 ឬថ្មីជាងនេះ (រូបថតក្នុងសៀវភៅនេះប្រើ QGIS 3.44 លើ macOS)
 - អ៊ីនធឺណិត ដើម្បីទាញយករូបភាព និងព្រំដែនរដ្ឋបាល
-- ឯកសារ `lee_rs_lab.zip`
+- កម្មវិធីជំនួយ (Plugin) **LEE RS Lab** ពីបណ្ណាល័យកម្មវិធីជំនួយរបស់ QGIS (មើលខាងក្រោម)
 
 ### ការដំឡើង
 
 1. បើក QGIS → **Plugins › Manage and Install Plugins…**
-2. ជ្រើស **Install from ZIP** រួចជ្រើសឯកសារ `lee_rs_lab.zip` → **Install Plugin**។
-3. រូបតំណាង LEE RS Lab លេចឡើងលើរបារឧបករណ៍។ ចុចវាដើម្បីបើកផ្ទាំង។ ចុចម្ដងទៀត (ពេលផ្ទាំងនៅខាងមុខ) ដើម្បីបិទ។
+2. ក្នុងផ្ទាំង **Settings** ធីក **Show also experimental plugins**។ (LEE RS Lab ស្ថិតក្នុងកំណែសាកល្បង (experimental) នៅឡើយ។)
+3. ក្នុងផ្ទាំង **All** វាយ **LEE RS Lab** ក្នុងប្រអប់ស្វែងរក ជ្រើសវា រួចចុច **Install Plugin**។
+4. រូបតំណាង LEE RS Lab លេចឡើងលើរបារឧបករណ៍។ ចុចវាដើម្បីបើកផ្ទាំង។ ចុចម្ដងទៀត (ពេលផ្ទាំងនៅខាងមុខ) ដើម្បីបិទ។
+
+ពេលមានកំណែថ្មី QGIS ជូនដំណឹងដោយខ្លួនឯង ហើយអ្នកអាចចុច **Upgrade Plugin** នៅកន្លែងដដែល។
+
+> គ្មានអ៊ីនធឺណិតល្អនៅក្នុងថ្នាក់? ទាញយក `lee_rs_lab.zip` ពី [GitHub Releases](https://github.com/khgeo/lee-rs-lab/releases/latest) ជាមុន ហើយប្រើ **Install from ZIP** ក្នុងផ្ទាំងដដែលជំនួសវិញ។
 
 ### ផ្ទាំងបញ្ជា
 
