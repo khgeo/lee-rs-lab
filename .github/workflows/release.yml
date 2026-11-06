@@ -1,0 +1,38 @@
+name: Release plugin
+
+# Push a tag like v2.2.0 → the plugin zip and the PDF manual are attached to a GitHub release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the tag matches metadata.txt
+        if: github.event_name == 'push'
+        run: |
+          v=$(grep '^version=' rs_lab/metadata.txt | cut -d= -f2)
+          [ "v$v" = "${GITHUB_REF_NAME}" ] || { echo "metadata.txt says $v but the tag is ${GITHUB_REF_NAME}"; exit 1; }
+      - name: Build lee_rs_lab.zip (folder rs_lab inside, as QGIS expects)
+        run: zip -r lee_rs_lab.zip rs_lab -x '*__pycache__*' '*.pyc'
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [ "${{ github.event_name }}" != "push" ]; then tag="v$(grep '^version=' rs_lab/metadata.txt | cut -d= -f2)"; fi
+          notes="$(awk '/^changelog=/{sub(/^changelog=/,""); print; exit}' rs_lab/metadata.txt)"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" lee_rs_lab.zip docs/downloads/lee-rs-lab-manual-km.pdf --clobber
+          else
+            gh release create "$tag" lee_rs_lab.zip docs/downloads/lee-rs-lab-manual-km.pdf \
+              --title "LEE RS Lab ${tag#v}" --notes "$notes
+
+📖 Manual: https://khgeo.github.io/lee-rs-lab/"
+          fi

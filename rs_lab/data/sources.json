@@ -1,0 +1,122 @@
+{
+  "admin_boundaries": {
+    "description": "Administrative boundaries, tried in order for the chosen country (Auto) or chosen in the panel. 'countries' limits a source to those ISO3 codes.",
+    "sources": [
+      {
+        "id": "hdx",
+        "type": "ckan",
+        "name": "HDX COD-AB (OCHA)",
+        "api": "https://data.humdata.org/api/3/action/package_show?id=",
+        "package": "cod-ab-{iso3}",
+        "cache": "hdx",
+        "attribution": "Subnational administrative boundaries (COD-AB) — OCHA / Humanitarian Data Exchange, CC BY-IGO"
+      },
+      {
+        "id": "odc",
+        "type": "ckan",
+        "name": "Open Development Cambodia — administrative boundaries 2014",
+        "api": "https://data.opendevelopmentcambodia.net/api/3/action/package_show?id=",
+        "package": "administrative-boundaries-of-cambodia-2014",
+        "cache": "odc",
+        "attribution": "Administrative boundaries of Cambodia 2014 — Open Development Cambodia, CC BY-SA",
+        "countries": [
+          "KHM"
+        ]
+      },
+      {
+        "id": "geoboundaries",
+        "type": "geoboundaries",
+        "name": "geoBoundaries (global, open)",
+        "api": "https://www.geoboundaries.org/api/current/gbOpen/%s/ADM%d/",
+        "max_level": 3,
+        "attribution": "geoBoundaries — Runfola et al. 2020, PLOS ONE; William & Mary geoLab, CC BY 4.0"
+      }
+    ]
+  },
+  "imagery": {
+    "description": "Free STAC catalogues of Cloud-Optimised GeoTIFFs — no account, no login.",
+    "earth_search": {
+      "name": "Earth Search (Element 84, AWS open data)",
+      "stac": "https://earth-search.aws.element84.com/v1",
+      "attribution": "Copernicus Sentinel-2 L2A COGs — Element 84 Earth Search / AWS Open Data"
+    },
+    "planetary_computer": {
+      "name": "Microsoft Planetary Computer",
+      "stac": "https://planetarycomputer.microsoft.com/api/stac/v1",
+      "token": "https://planetarycomputer.microsoft.com/api/sas/v1/token/",
+      "attribution": "Sentinel-2 L2A / Landsat C2 L2 / Sentinel-1 RTC — Microsoft Planetary Computer"
+    }
+  },
+  "basemaps": [
+    {
+      "id": "esri_imagery",
+      "name": "Esri World Imagery",
+      "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      "zmax": 19,
+      "attribution": "Esri, Maxar, Earthstar Geographics and the GIS User Community"
+    },
+    {
+      "id": "google_sat",
+      "name": "Google Satellite",
+      "url": "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+      "zmax": 20,
+      "attribution": "Imagery © Google"
+    },
+    {
+      "id": "google_hybrid",
+      "name": "Google Hybrid (satellite + labels)",
+      "url": "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+      "zmax": 20,
+      "attribution": "Imagery and map data © Google"
+    },
+    {
+      "id": "s2cloudless",
+      "name": "Sentinel-2 cloudless 2016 (EOX)",
+      "url": "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg",
+      "zmax": 15,
+      "attribution": "Sentinel-2 cloudless by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2016), CC BY 4.0"
+    },
+    {
+      "id": "osm",
+      "name": "OpenStreetMap",
+      "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "zmax": 19,
+      "attribution": "© OpenStreetMap contributors, ODbL"
+    },
+    {
+      "id": "opentopo",
+      "name": "OpenTopoMap (terrain)",
+      "url": "https://tile.opentopomap.org/{z}/{x}/{y}.png",
+      "zmax": 17,
+      "attribution": "© OpenStreetMap contributors, SRTM; style © OpenTopoMap (CC BY-SA)"
+    },
+    {
+      "id": "esri_topo",
+      "name": "Esri World Topographic",
+      "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+      "zmax": 19,
+      "attribution": "Esri and contributors"
+    },
+    {
+      "id": "esri_hillshade",
+      "name": "Esri World Hillshade",
+      "url": "https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}",
+      "zmax": 16,
+      "attribution": "Esri, USGS, NGA, NASA, CGIAR"
+    },
+    {
+      "id": "carto_light",
+      "name": "CARTO Positron (light)",
+      "url": "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+      "zmax": 20,
+      "attribution": "© OpenStreetMap contributors © CARTO"
+    },
+    {
+      "id": "carto_dark",
+      "name": "CARTO Dark Matter (dark)",
+      "url": "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+      "zmax": 20,
+      "attribution": "© OpenStreetMap contributors © CARTO"
+    }
+  ]
+}

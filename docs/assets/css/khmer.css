@@ -1,0 +1,151 @@
+/* ============================================================
+   Khmer typography — Fundamentals of GIS textbook
+   Fonts: Battambang, Siemreap & Moul by Danh Hong (KhmerOS project),
+   served by Google Fonts under the SIL Open Font License.
+
+   TWO-FONT SYSTEM
+     Siemreap    running text: lessons, articles, tables, lists
+     Battambang  anything bold: headings, chapter names, key terms
+     Moul        the site title only
+
+   Why the split: Siemreap has ONE weight. If bold text were set in
+   Siemreap the browser would fake it by smearing the strokes, which
+   looks wrong in Khmer. Battambang has a real 700 cut, so every bold
+   element is routed to it and nothing is ever synthesised.
+   ============================================================ */
+
+
+:root {
+  /* ---- the three faces ---- */
+  --km-read: 'Siemreap';       /* running text */
+  --km-emph: 'Battambang';     /* headings, bold, chapter names */
+  --km-title: 'Moul';          /* site title in the green bar */
+
+  /* Siemreap covers Khmer only, so Latin falls through to Battambang.
+     That is deliberate: English terms stay legible inside Khmer prose. */
+  --km-read-stack: var(--km-read), 'Battambang', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --km-emph-stack: var(--km-emph), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --km-display: var(--km-title), var(--km-emph), serif;
+
+  /* Material builds its own stack from these; overriding them is what
+     makes the change reach the nav, header, search and footer. */
+  --md-text-font: var(--km-read);
+  --md-text-font-family: var(--km-read-stack);
+  --md-code-font: 'Roboto Mono';
+}
+
+/* ---- running text ---- */
+body, .md-typeset, .md-nav, .md-header, .md-footer,
+.md-grid, .md-container, .md-main, .md-sidebar, .md-search__input,
+.md-tabs, button, input, select, textarea {
+  font-family: var(--km-read-stack);
+}
+
+body, .md-typeset {
+  /* Siemreap is lighter and sits smaller than Battambang at the same
+     size, so it needs a step up to stay comfortable at reading length. */
+  font-size: 0.75rem;
+  line-height: 1.95;
+}
+
+/* ---- everything bold goes to Battambang ---- */
+.md-typeset h1, .md-typeset h2, .md-typeset h3, .md-typeset h4,
+.md-typeset h5, .md-typeset h6,
+.md-typeset strong, .md-typeset b,
+.md-typeset table:not([class]) th,
+.md-typeset .admonition-title, .md-typeset summary,
+.md-nav__title {
+  font-family: var(--km-emph-stack);
+  font-weight: 700;
+}
+
+.md-typeset h1, .md-typeset h2, .md-typeset h3, .md-typeset h4 {
+  line-height: 1.65;
+}
+.md-typeset h1 { font-size: 1.2rem; }
+.md-typeset h2 { margin-top: 1.5em; }
+
+/* ---- site title ---- */
+.md-header__title, .md-header__topic {
+  display: flex;
+  align-items: center;
+}
+.md-header__topic:first-child .md-ellipsis {
+  font-family: var(--km-display);
+  /* Moul has one weight only; bolding it is faux-bold and smears */
+  font-weight: 400;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  padding-top: 0.1rem;   /* optical nudge: Khmer ascenders sit high */
+}
+
+/* ---- sidebar navigation ---- */
+
+/* Chapters: Battambang bold */
+.md-nav--primary > .md-nav__list > .md-nav__item > .md-nav__link {
+  font-family: var(--km-emph-stack);
+  font-weight: 700;
+  font-size: 0.7rem;
+  line-height: 1.7;
+}
+
+/* Gap between chapters */
+.md-nav--primary > .md-nav__list > .md-nav__item { margin-top: 0.45rem; }
+
+/* Lessons: Siemreap, tighter */
+.md-nav--primary .md-nav .md-nav__link {
+  font-family: var(--km-read-stack);
+  font-weight: 400;
+  font-size: 0.67rem;
+  line-height: 1.45;
+  padding: 0;
+}
+.md-nav--primary .md-nav .md-nav__item {
+  margin: 0.1rem 0;
+  padding: 0;
+}
+
+.md-nav__link { line-height: 1.6; }
+
+/* ---- tables ---- */
+.md-typeset table:not([class]) { font-size: 0.68rem; line-height: 1.75; }
+
+/* ---- code, QGIS tool names, EPSG codes ---- */
+code, .md-typeset code, pre, kbd, .md-typeset kbd {
+  font-family: 'Roboto Mono', ui-monospace, 'Courier New', monospace;
+  line-height: 1.5;
+  font-size: 0.84em;
+}
+
+/* ---- admonitions, lists, cards ---- */
+.md-typeset .admonition, .md-typeset details { line-height: 1.9; }
+.md-typeset .admonition-title { line-height: 1.7; }
+.md-typeset ol li, .md-typeset ul li { margin-bottom: 0.45em; }
+.md-typeset .grid.cards > ul > li { line-height: 1.85; }
+
+/* ---- figures ---- */
+/* Material sets `width: fit-content` on figure, which shrinks the box to the
+   SVG's intrinsic size and leaves the diagram far narrower than the text
+   column. Forcing full width is what actually makes the figures large. */
+.md-typeset figure {
+  margin: 1.8em 0;
+  width: 100%;
+  max-width: 100%;
+}
+.md-typeset figure svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.md-typeset figcaption {
+  font-size: 0.67rem; line-height: 1.7; margin-top: 0.5em;
+  color: var(--md-default-fg-color--light);
+}
+
+/* ---- print / PDF ---- */
+@media print {
+  body, .md-typeset { font-size: 11.5pt; line-height: 1.85; }
+  .md-typeset h1 { page-break-before: always; }
+  .md-typeset h1:first-of-type { page-break-before: avoid; }
+  .md-typeset table { page-break-inside: avoid; }
+}
