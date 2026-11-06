@@ -6,6 +6,9 @@ from qgis.gui import QgsMapToolEmitPoint
 from qgis.PyQt.QtWidgets import QDialog, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
 
 from .i18n import tr
+import logging
+
+LOG = logging.getLogger(__name__)
 
 try:
     from matplotlib.figure import Figure
@@ -42,7 +45,7 @@ def _khmer_fonts():
                         try:
                             fm.fontManager.addfont(os.path.join(root, f))
                         except Exception:  # noqa: BLE001
-                            pass
+                            LOG.debug("ignored error", exc_info=True)
         have = {f.name for f in fm.fontManager.ttflist}
         found = [n for n in want if n in have]
         if found:
@@ -50,7 +53,7 @@ def _khmer_fonts():
             matplotlib.rcParams["font.family"] = "sans-serif"
             matplotlib.rcParams["font.sans-serif"] = ["DejaVu Sans"] + found + [c for c in cur if c not in found]
     except Exception:  # noqa: BLE001
-        pass
+        LOG.debug("ignored error", exc_info=True)
 
 
 # ---------------------------------------------------------------- Khmer text
@@ -82,7 +85,7 @@ def _qt_khmer_family():
                     fam = n
                     break
         except Exception:  # noqa: BLE001
-            pass
+            LOG.debug("ignored error", exc_info=True)
         _QT_FAMILY.append(fam)
     return _QT_FAMILY[0]
 
@@ -120,7 +123,7 @@ def _qt_text_rgba(text, pt, color, bold=False, rotation=0.0, scale=4):
     try:
         ptr.setsize(n)
     except AttributeError:
-        pass
+        LOG.debug("ignored error", exc_info=True)
     arr = np.frombuffer(ptr, np.uint8, count=n).reshape(h, bpl)[:, :w * 4].reshape(h, w, 4)
     return arr.copy()
 
@@ -144,6 +147,7 @@ def _khmerize(fig, scale=4):
             bold = wt in ("bold", "heavy", "black", "semibold", "demibold") or (isinstance(wt, (int, float)) and wt >= 600)
             arr = _qt_text_rgba(s, t.get_fontsize(), to_hex(t.get_color()), bold, t.get_rotation(), scale)
         except Exception:  # noqa: BLE001
+            LOG.debug("ignored error", exc_info=True)
             continue
         fx, fy = fx_of.get(t.get_horizontalalignment(), 0.5), fy_of.get(t.get_verticalalignment(), 0.5)
         ab = AnnotationBbox(OffsetImage(arr, zoom=1.0 / scale), (fx, fy), xycoords=t, box_alignment=(fx, fy),
@@ -194,7 +198,7 @@ class ChartDialog(QDialog):
             try:
                 self.fig.tight_layout()
             except Exception:  # noqa: BLE001
-                pass
+                LOG.debug("ignored error", exc_info=True)
             _khmerize(self.fig)
             self.canvas.draw()
         self.show()

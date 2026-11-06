@@ -17,6 +17,9 @@ import html as _html
 import os
 import tempfile
 import webbrowser
+import logging
+
+LOG = logging.getLogger(__name__)
 
 
 def _band_path(x0, y0, x1, y1, w):
@@ -227,5 +230,5 @@ def write_sankey_html(matrix, class_defs, year_a, year_b, path=None,
         try:
             webbrowser.open("file://" + os.path.abspath(path))
         except (OSError, RuntimeError, webbrowser.Error):  # headless, etc.
-            pass
+            LOG.debug("ignored error", exc_info=True)
     return path

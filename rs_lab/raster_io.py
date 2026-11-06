@@ -7,6 +7,9 @@ import numpy as np
 from osgeo import gdal, ogr, osr
 
 from . import catalog
+import logging
+
+LOG = logging.getLogger(__name__)
 
 gdal.UseExceptions()
 
@@ -238,7 +241,7 @@ def add_single_layer(path, name, ramp="RdYlGn", vmin=None, vmax=None, group=None
         try:
             rp.invert()
         except Exception:  # noqa: BLE001
-            pass
+            LOG.debug("ignored error", exc_info=True)
     span = vmax - vmin
     n = max(2, int(classes))
     items = []
@@ -255,7 +258,7 @@ def add_single_layer(path, name, ramp="RdYlGn", vmin=None, vmax=None, group=None
     try:
         fn.setSourceColorRamp(rp.clone())
     except Exception:  # noqa: BLE001
-        pass
+        LOG.debug("ignored error", exc_info=True)
     fn.setColorRampItemList(items)
     shader = QgsRasterShader()
     shader.setRasterShaderFunction(fn)
@@ -381,6 +384,7 @@ def relabel_layer(lyr):
                 try:
                     v = int(cat.value())
                 except Exception:  # noqa: BLE001
+                    LOG.debug("ignored error", exc_info=True)
                     continue
                 if v in labels:
                     ren.updateCategoryLabel(i, labels[v])

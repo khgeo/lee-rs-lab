@@ -4,11 +4,14 @@ import os
 from qgis.core import QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsGeometry, QgsProject
 from qgis.gui import QgsRubberBand
 from qgis.PyQt.QtGui import QColor, QIcon
-from qgis.PyQt.QtWidgets import QDockWidget, QToolBar, QToolButton
+from qgis.PyQt.QtWidgets import QDockWidget, QToolBar
 
 from . import deps
-from .compat import RIGHT_DOCK, E, QAction
+from .compat import RIGHT_DOCK, QAction
 from .i18n import init_language, tr
+import logging
+
+LOG = logging.getLogger(__name__)
 
 HERE = os.path.dirname(__file__)
 NAME = "LEE RS Lab"
@@ -78,12 +81,12 @@ class RSLab:
         try:
             QgsProject.instance().cleared.disconnect(self.reset)
         except Exception:  # noqa: BLE001
-            pass
+            LOG.debug("ignored error", exc_info=True)
         if _alive(self.panel):
             try:
                 self.panel.cleanup()
             except RuntimeError:
-                pass
+                LOG.debug("ignored error", exc_info=True)
         self.panel = None
         try:
             self.clear_aoi()
@@ -95,11 +98,11 @@ class RSLab:
                 self.iface.removeDockWidget(dock)
                 dock.deleteLater()
             except RuntimeError:
-                pass
+                LOG.debug("ignored error", exc_info=True)
         try:
             self.iface.mapCanvas().destinationCrsChanged.disconnect(self._reshow_aoi)
         except Exception:  # noqa: BLE001
-            pass
+            LOG.debug("ignored error", exc_info=True)
         tb, self.toolbar = self.toolbar, None
         if _alive(tb):              # QGIS may already have destroyed it (e.g. on exit / reload)
             try:
@@ -107,13 +110,13 @@ class RSLab:
                 tb.setObjectName("RSLabToolbar_old")
                 tb.deleteLater()
             except RuntimeError:
-                pass
+                LOG.debug("ignored error", exc_info=True)
         self.bm_action = self.bm_button = self.bm_menu = None
         if _alive(self.action):
             try:
                 self.iface.removePluginRasterMenu(NAME, self.action)
             except RuntimeError:
-                pass
+                LOG.debug("ignored error", exc_info=True)
 
     def _ensure_dock(self):
         if self.dock is None or not _alive(self.dock):
@@ -249,7 +252,7 @@ class RSLab:
                 new.btn_run.setEnabled(False)
                 new.btn_stop.setEnabled(True)
             except (AttributeError, RuntimeError):
-                pass
+                LOG.debug("ignored error", exc_info=True)
 
     def release_panel(self, old):
         if old in self._retired:

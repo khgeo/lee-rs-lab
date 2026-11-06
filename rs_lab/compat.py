@@ -1,5 +1,8 @@
 """Qt5/Qt6 and QGIS 3/4 compatibility helpers."""
 from qgis.PyQt import QtCore, QtWidgets
+import logging
+
+LOG = logging.getLogger(__name__)
 
 try:
     from qgis.PyQt.QtWidgets import QAction  # noqa: F401  Qt5 (re-exported)
@@ -84,7 +87,7 @@ def set_layer_filters(combo, *kinds):
             elif hasattr(Qgis, "LayerFilter"):         # PyQt6 enum.Flag
                 v = Qgis.LayerFilter(v)
         except Exception:  # noqa: BLE001
-            pass
+            LOG.debug("ignored error", exc_info=True)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
         combo.setFilters(v)
@@ -105,3 +108,10 @@ def label_font(item, family="Arial", size=10, bold=False):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
             item.setFont(f)
+
+
+def web_url(url):
+    """Only http(s) URLs are ever opened (no file: or custom schemes)."""
+    if not str(url).lower().startswith(("https://", "http://")):
+        raise ValueError("Refusing to open a non-web URL: %r" % (url,))
+    return url

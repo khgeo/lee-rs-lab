@@ -9,6 +9,9 @@ import json
 import os
 
 from qgis.core import QgsSettings
+import logging
+
+LOG = logging.getLogger(__name__)
 
 KEY = "rs_lab/language"
 _DIR = os.path.join(os.path.dirname(__file__), "i18n")
@@ -65,5 +68,5 @@ def both(text):
         with open(os.path.join(_DIR, "km.json"), encoding="utf-8") as f:
             km = json.load(f)
     except Exception:
-        pass
+        LOG.debug("ignored error", exc_info=True)
     return text, km.get(text, text)

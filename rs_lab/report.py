@@ -11,6 +11,9 @@ from qgis.PyQt.QtPrintSupport import QPrinter
 
 from .compat import E
 from .i18n import language, tr
+import logging
+
+LOG = logging.getLogger(__name__)
 
 
 def _img_b64(img):
@@ -69,7 +72,7 @@ def render_canvas(canvas, w=1600, h=1100):
         lab = "%g km" % (nice / 1000) if nice >= 1000 else "%g m" % nice
         p.drawText(QPointF(x0 + px + 10, y0 + 6), lab)
     except Exception:  # noqa: BLE001
-        pass
+        LOG.debug("ignored error", exc_info=True)
     p.end()
     return img
 

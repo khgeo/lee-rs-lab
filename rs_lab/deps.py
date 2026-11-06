@@ -6,10 +6,13 @@ import importlib
 import os
 import platform
 import shutil
-import subprocess
+import subprocess  # nosec B404 - only to run pip with a fixed argument list (no shell)
 import sys
 
 from qgis.core import QgsApplication, QgsSettings
+import logging
+
+LOG = logging.getLogger(__name__)
 
 LIB_DIR = os.path.join(QgsApplication.qgisSettingsDirPath(), "python", "rs_lab_libs")
 OLD_LIB_DIR = os.path.join(QgsApplication.qgisSettingsDirPath(), "python", "rs_teaching_lab_libs")
@@ -68,7 +71,7 @@ def _same_version(exe):
     so a mismatched interpreter cannot pick up QGIS's standard library and crash)."""
     try:
         env = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", "PYTHONHOME")}
-        p = subprocess.run([exe, "-I", "-c", "import sys;print('%d.%d'%sys.version_info[:2])"],
+        p = subprocess.run([exe, "-I", "-c", "import sys;print('%d.%d'%sys.version_info[:2])"],  # noqa: S603  # nosec B603
                            capture_output=True, text=True, timeout=30, env=env,
                            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         return p.returncode == 0 and p.stdout.strip() == "%d.%d" % sys.version_info[:2]
@@ -145,7 +148,7 @@ def run_pip(packages, upgrade=False, timeout=900):
     exe = python_exe()
     if exe is None:
         return _pip_in_process(args)
-    p = subprocess.run([exe, "-m", "pip"] + args, capture_output=True, text=True, env=env_for_child(),
+    p = subprocess.run([exe, "-m", "pip"] + args, capture_output=True, text=True, env=env_for_child(),  # noqa: S603  # nosec B603
                        timeout=timeout, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     out = (p.stdout or "") + "\n" + (p.stderr or "")
     if p.returncode != 0 and ("No module named pip" in out or "Fatal Python error" in out):
@@ -156,7 +159,7 @@ def run_pip(packages, upgrade=False, timeout=900):
 
 def run_blocking(cmd, timeout=900):
     """Used only from background tasks."""
-    p = subprocess.run(cmd, capture_output=True, text=True, env=env_for_child(), timeout=timeout,
+    p = subprocess.run(cmd, capture_output=True, text=True, env=env_for_child(), timeout=timeout,  # noqa: S603  # nosec B603
                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     return p.returncode, (p.stdout or "") + "\n" + (p.stderr or "")
 
@@ -173,4 +176,4 @@ def guard_multiprocessing():
         try:
             multiprocessing.set_executable(py)
         except Exception:  # noqa: BLE001
-            pass
+            LOG.debug("ignored error", exc_info=True)

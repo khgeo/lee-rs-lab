@@ -11,6 +11,9 @@ import re
 from osgeo import gdal
 
 from . import catalog
+import logging
+
+LOG = logging.getLogger(__name__)
 
 gdal.UseExceptions()
 
@@ -100,6 +103,7 @@ def plan(paths):
         try:
             d = detect(p)
         except Exception:  # noqa: BLE001
+            LOG.debug("ignored error", exc_info=True)
             continue
         ds = gdal.Open(p)
         if ds is None:
@@ -176,6 +180,6 @@ def build(task, items, out_path, pixel=None, aoi_geom_4326=None, epsg=None, clip
         try:
             os.remove(p)
         except OSError:
-            pass
+            LOG.debug("ignored error", exc_info=True)
     task.setProgress(100)
     return dict(path=out_path, sensor=",".join(sensors), descs=descs, res=res)

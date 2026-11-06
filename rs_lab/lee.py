@@ -876,7 +876,7 @@ def run(code, aoi_geom, out_dir, task=None, log=None, workers=8):
     ns = {"lee": _sys.modules[__name__], "ee": _sys.modules[__name__], "Map": Map, "Chart": Chart, "np": np,
           "aoi": aoi_geom, "print": _print, "Image": Image, "ImageCollection": ImageCollection}
     try:
-        exec(compile(code, "<LEE script>", "exec"), ns)  # noqa: S102  (user's own script, run locally)
+        exec(compile(code, "<LEE script>", "exec"), ns)  # noqa: S102  # nosec B102 - the user's own LEE script, run locally
     finally:
         res = dict(layers=list(CTX.layers), charts=list(CTX.charts), tables=list(CTX.tables),
                    seconds=time.time() - t0, printed=lines, scale=CTX.scale, epsg=CTX.epsg)

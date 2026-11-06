@@ -195,7 +195,7 @@ def band_math(expr, variables):
         if bad in expr:
             raise ValueError("Expression not allowed: %s" % bad)
     with np.errstate(divide="ignore", invalid="ignore"):
-        out = eval(expr, {"__builtins__": {}}, env)  # noqa: S307 (sandboxed namespace)
+        out = eval(expr, {"__builtins__": {}}, env)  # noqa: S307  # nosec B307 - band math in an empty-builtins namespace
     out = np.asarray(out, "float64")
     out[~np.isfinite(out)] = np.nan
     return out

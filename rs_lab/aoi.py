@@ -12,7 +12,7 @@ from qgis.gui import QgsMapTool, QgsRubberBand
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtGui import QColor
 
-from .compat import E, can_cancel
+from .compat import E, can_cancel, web_url
 from .i18n import tr
 
 HERE = os.path.dirname(__file__)
@@ -47,8 +47,8 @@ def _ua():
 
 
 def _download(url, fn, timeout=600):
-    req = urllib.request.Request(url, headers=_ua())
-    with urllib.request.urlopen(req, timeout=timeout) as r, open(fn + ".part", "wb") as f:
+    req = urllib.request.Request(web_url(url), headers=_ua())  # noqa: S310  # nosec B310
+    with urllib.request.urlopen(req, timeout=timeout) as r, open(fn + ".part", "wb") as f:  # noqa: S310  # nosec B310
         while True:
             chunk = r.read(1 << 20)
             if not chunk:
@@ -299,8 +299,8 @@ class CkanAdmin(VectorAdmin):
 
     def download(self, task=None):
         os.makedirs(self.dir, exist_ok=True)
-        req = urllib.request.Request(self.src["api"] + self.src["package"], headers=_ua())
-        with urllib.request.urlopen(req, timeout=60) as r:
+        req = urllib.request.Request(web_url(self.src["api"] + self.src["package"]), headers=_ua())  # noqa: S310  # nosec B310
+        with urllib.request.urlopen(req, timeout=60) as r:  # noqa: S310  # nosec B310
             pkg = json.load(r)["result"]
 
         def score(x):
@@ -368,8 +368,8 @@ class GeoBoundariesAdmin(VectorAdmin):
                 got += 1
                 continue
             try:
-                req = urllib.request.Request(self.src["api"] % (self.iso3, lev), headers=_ua())
-                with urllib.request.urlopen(req, timeout=60) as r:
+                req = urllib.request.Request(web_url(self.src["api"] % (self.iso3), lev), headers=_ua())  # noqa: S310  # nosec B310
+                with urllib.request.urlopen(req, timeout=60) as r:  # noqa: S310  # nosec B310
                     meta = json.load(r)
                 if isinstance(meta, list):
                     meta = meta[0] if meta else {}

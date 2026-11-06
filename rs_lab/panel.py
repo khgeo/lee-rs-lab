@@ -15,7 +15,7 @@ from qgis.gui import QgsFileWidget, QgsMapLayerComboBox, QgsFieldComboBox
 from qgis.PyQt.QtCore import QDate, QPoint, QRect, QSize
 from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtWidgets import (QAbstractButton, QAbstractItemView, QCheckBox, QColorDialog, QComboBox,
-                                 QDateEdit, QDoubleSpinBox, QFileDialog, QFormLayout, QGroupBox, QHBoxLayout,
+                                 QDateEdit, QDoubleSpinBox, QFileDialog, QFormLayout, QHBoxLayout,
                                  QLabel, QLayout, QLineEdit, QListWidget, QListWidgetItem, QMessageBox,
                                  QPlainTextEdit, QProgressBar, QPushButton, QScrollArea, QSizePolicy, QSpinBox,
                                  QTableWidget, QTableWidgetItem, QTabWidget, QToolButton, QVBoxLayout, QWidget)
@@ -23,11 +23,14 @@ from qgis.PyQt.QtWidgets import (QAbstractButton, QAbstractItemView, QCheckBox, 
 from . import aoi as aoimod
 from . import catalog, deps, plots, procs, report, tasks
 from . import raster_io as rio
-from .compat import (CHECKABLE, CHECKED, EDITABLE, NO_EDIT, RESIZE_CONTENTS, SCROLL_OFF, SELECT_ROWS,
+from .compat import (web_url, CHECKABLE, CHECKED, EDITABLE, NO_EDIT, RESIZE_CONTENTS, SCROLL_OFF, SELECT_ROWS,
                      UNCHECKED, USER_ROLE, YES, NO, E, Qt, field_filter_numeric, layer_filter,
                      set_layer_filters, label_font)
 from .i18n import language, set_language, tr
 from .lessons import lesson
+import logging
+
+LOG = logging.getLogger(__name__)
 
 GROUP = "LEE RS Lab"
 HERE = os.path.dirname(__file__)
@@ -482,7 +485,7 @@ class Panel(QWidget):
                             live.rerender()
                             live.msg(tr("%s — finished.") % title, "ok" if ok else "warn")
                         except RuntimeError:
-                            pass
+                            LOG.debug("ignored error", exc_info=True)
                     if self._busy <= 0:
                         self.plugin.release_panel(self)
         return tasks.run(title, fn, args, kwargs, done)
@@ -496,7 +499,7 @@ class Panel(QWidget):
                 if bar is not None:
                     bar.setValue(int(v))
             except RuntimeError:
-                pass
+                LOG.debug("ignored error", exc_info=True)
         task.progressChanged.connect(upd)
 
     def _live(self):
@@ -507,7 +510,7 @@ class Panel(QWidget):
                 P.objectName()
                 return P
         except RuntimeError:
-            pass
+            LOG.debug("ignored error", exc_info=True)
         return self
 
     def busy(self):
@@ -588,8 +591,8 @@ class Panel(QWidget):
             for name, url in tests:
                 t0 = time.time()
                 try:
-                    req = urllib.request.Request(url, headers={"User-Agent": "QGIS-RS-Lab/2.0"})
-                    with urllib.request.urlopen(req, timeout=20) as r:
+                    req = urllib.request.Request(web_url(url), headers={"User-Agent": "QGIS-RS-Lab/2.0"})  # noqa: S310  # nosec B310
+                    with urllib.request.urlopen(req, timeout=20) as r:  # noqa: S310  # nosec B310
                         r.read(2048)
                     out.append([name, "OK (%.1f s)" % (time.time() - t0)])
                 except Exception as e:  # noqa: BLE001
@@ -618,7 +621,7 @@ class Panel(QWidget):
                     try:
                         tot += os.path.getsize(os.path.join(root, f))
                     except OSError:
-                        pass
+                        LOG.debug("ignored error", exc_info=True)
             return tot / 1e6
         sk = deps.has_module("sklearn")
         self.ee_status.setText("%s · scikit-learn: <b>%s</b>" % (
@@ -1136,7 +1139,7 @@ class Panel(QWidget):
             sym.symbolLayer(0).setStrokeColor(QColor("#ff5a00"))
             sym.symbolLayer(0).setStrokeWidth(0.8)
         except Exception:  # noqa: BLE001
-            pass
+            LOG.debug("ignored error", exc_info=True)
         from qgis.core import QgsSingleSymbolRenderer
         vl.setRenderer(QgsSingleSymbolRenderer(sym))
         QgsProject.instance().addMapLayer(vl)
@@ -1205,13 +1208,13 @@ class Panel(QWidget):
         p, src, geom = self._params(), self.source(), QgsGeometry(self.aoi_geom)
 
         def job(task):
-            return se.search(src, p["sensor"], geom, p["start"], p["end"], p["max_cloud"], p["s1_pass"], task=task)
+            return se.search(src, p["sensor"], geom, p["start"], p["end"], p["max_cloud"], p["s1_orbit"], task=task)
 
         def done(ok, res, err):
             if not ok:
                 self.msg(tr("Search failed: %s") % err, "err")
                 return
-            self.stac_scenes = dict(key=(src, p["sensor"], p["start"], p["end"], p["max_cloud"], p["s1_pass"]),
+            self.stac_scenes = dict(key=(src, p["sensor"], p["start"], p["end"], p["max_cloud"], p["s1_orbit"]),
                                     scenes=res)
             self._show_scenes(res)
         self._task(tr("Searching scenes"), job, on_done=done)
@@ -1221,7 +1224,7 @@ class Panel(QWidget):
         """Search/download parameters from the Imagery section (restored — were missing in 2.0.2)."""
         return dict(sensor=self.sensor.currentData(), start=self.d0.date().toString("yyyy-MM-dd"),
                     end=self.d1.date().toString("yyyy-MM-dd"), max_cloud=self.cloud.value(),
-                    s1_pass=self.s1pass.currentData() or "BOTH")
+                    s1_orbit=self.s1pass.currentData() or "BOTH")
 
     def _selected_ids(self):
         """Scene ids of the rows selected in the scenes table (column 'Scene ID')."""
@@ -1305,7 +1308,7 @@ class Panel(QWidget):
                                      tr("About %.0f MB will be downloaded. Continue?") % mb_tmp, YES | NO)
             if r != YES:
                 return
-        key = (src, p["sensor"], p["start"], p["end"], p["max_cloud"], p["s1_pass"])
+        key = (src, p["sensor"], p["start"], p["end"], p["max_cloud"], p["s1_orbit"])
         scenes = self.stac_scenes["scenes"] if self.stac_scenes and self.stac_scenes["key"] == key else None
         if quick:
             out = os.path.join(tempfile.mkdtemp(prefix="rslab_ql_"), "quicklook.tif")
@@ -1325,7 +1328,7 @@ class Panel(QWidget):
         def job(task):
             return se.download(task, src, p["sensor"], geom, p["start"], p["end"], p["max_cloud"], method, bands,
                                product, out, scale, epsg, self.clip.isChecked(), self.mask.isChecked(),
-                               p["s1_pass"], self.max_scenes.value(), ids, scenes, descs, meta, log,
+                               p["s1_orbit"], self.max_scenes.value(), ids, scenes, descs, meta, log,
                                workers=workers)
 
         def done(ok, res, err):
@@ -2228,7 +2231,7 @@ class Panel(QWidget):
         try:
             self.cls_table.itemChanged.disconnect()
         except Exception:  # noqa: BLE001
-            pass
+            LOG.debug("ignored error", exc_info=True)
         self.cls_table.itemChanged.connect(self.read_classes)
         self._refresh_class_users()
 
@@ -2246,6 +2249,7 @@ class Panel(QWidget):
             try:
                 v = int(self.cls_table.item(r, 0).text())
             except Exception:  # noqa: BLE001
+                LOG.debug("ignored error", exc_info=True)
                 continue
             it = self.cls_table.item(r, 1)
             n = it.text() if it else str(v)
@@ -2928,7 +2932,6 @@ class Panel(QWidget):
         from qgis.core import (Qgis, QgsApplication, QgsLayoutItemLabel, QgsLayoutItemLegend, QgsLayoutItemMap,
                                QgsLayoutItemPicture, QgsLayoutItemScaleBar, QgsLayoutPoint, QgsLayoutSize,
                                QgsPrintLayout, QgsRectangle, QgsUnitTypes)
-        from qgis.PyQt.QtGui import QFont
         try:
             MM = Qgis.LayoutUnit.Millimeters
         except AttributeError:
@@ -3317,7 +3320,6 @@ class Panel(QWidget):
                 self.msg(why, "warn")
                 self.session.pop("change", None)
                 return
-        names = {c[0]: tr(c[1]) for c in self.classes()}
         keys = {c[0]: c[1] for c in self.classes()}
         if mode == "diff":
             def done(ok, res, err):
@@ -3347,7 +3349,7 @@ class Panel(QWidget):
                     self.msg(err, "err")
                     return
                 cl = []
-                rnd = random.Random(1)
+                rnd = random.Random(1)  # noqa: S311  # nosec B311 - sampling, not security
                 for code in res["codes"]:
                     a, b = divmod(code, 1000)
                     col = "#e8e8e8" if a == b else "#%06x" % rnd.randint(0x202020, 0xe0e0e0)
@@ -3494,7 +3496,7 @@ class Panel(QWidget):
             try:
                 self._script_task.cancel()
             except RuntimeError:
-                pass
+                LOG.debug("ignored error", exc_info=True)
 
     def run_script(self, code=None, switch=True):
         from . import lee
@@ -3522,7 +3524,7 @@ class Panel(QWidget):
                     pn.btn_run.setEnabled(True)
                     pn.btn_stop.setEnabled(False)
                 except RuntimeError:
-                    pass
+                    LOG.debug("ignored error", exc_info=True)
             P.out.setPlainText("\n".join(lines))
             if not ok or not res:
                 P.out.appendPlainText("\n" + tr("Error:") + " " + (err or tr("cancelled")))
@@ -3639,7 +3641,7 @@ class Panel(QWidget):
                 elif isinstance(w, QAbstractButton) and w.isCheckable():
                     st[n] = w.isChecked()
             except Exception:  # noqa: BLE001
-                pass
+                LOG.debug("ignored error", exc_info=True)
         st["_bands"] = [self.bands.item(i).checkState() == CHECKED for i in range(self.bands.count())]
         st["_scenes"] = [[self.scenes.item(r, c).text() if self.scenes.item(r, c) else ""
                           for c in range(self.scenes.columnCount())] for r in range(self.scenes.rowCount())]
@@ -3687,7 +3689,7 @@ class Panel(QWidget):
                 elif isinstance(w, QAbstractButton) and w.isCheckable():
                     w.setChecked(bool(v))
             except Exception:  # noqa: BLE001
-                pass
+                LOG.debug("ignored error", exc_info=True)
         for i, on in enumerate(st.get("_bands", [])):
             if i < self.bands.count():
                 self.bands.item(i).setCheckState(CHECKED if on else UNCHECKED)
@@ -3768,7 +3770,7 @@ class Panel(QWidget):
             try:
                 self.canvas.scene().removeItem(self.lb_marker)
             except RuntimeError:
-                pass
+                LOG.debug("ignored error", exc_info=True)
             self.lb_marker = None
         for t in (self.rect_tool, self.profile_tool):
             if t is not None and self.canvas.mapTool() is t:

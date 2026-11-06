@@ -9,6 +9,7 @@ Only the pixels inside the AOI are read (GDAL /vsicurl/ range requests), each sc
 The result carries band names, roles and scale metadata, so every tab works the same for any source.
 """
 import json
+from .compat import web_url
 import math
 import os
 import shutil
@@ -80,10 +81,10 @@ def _http_json(url, body=None, timeout=90, tries=4):
     last = None
     for a in range(tries):
         try:
-            req = urllib.request.Request(url, data=data, headers={"User-Agent": "QGIS-RS-Lab/1.2",
+            req = urllib.request.Request(web_url(url), data=data, headers={"User-Agent": "QGIS-RS-Lab/1.2",  # noqa: S310  # nosec B310
                                                                   "Content-Type": "application/json",
                                                                   "Accept": "application/geo+json, application/json"})
-            with urllib.request.urlopen(req, timeout=timeout) as r:
+            with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310  # nosec B310
                 return json.load(r)
         except urllib.error.HTTPError as e:
             last = "%s %s" % (e.code, e.read()[:300])
@@ -116,7 +117,7 @@ def _signed(source, coll, href):
 
 
 # ------------------------------------------------------------------ search
-def search(source, sensor, geom_4326, start, end, max_cloud=30, s1_pass="BOTH", limit=300, task=None):
+def search(source, sensor, geom_4326, start, end, max_cloud=30, s1_orbit="BOTH", limit=300, task=None):
     """Return scene dicts (id, date, cloud, tile, item). end is exclusive (YYYY-MM-DD)."""
     spec = STAC[source][sensor]
     base = _cfg()[source]["stac"]
@@ -128,8 +129,8 @@ def search(source, sensor, geom_4326, start, end, max_cloud=30, s1_pass="BOTH", 
         q["eo:cloud_cover"] = {"lte": max_cloud}
     if spec.get("platform"):
         q["platform"] = {"in": [spec["platform"]]}
-    if spec.get("sar") and s1_pass in ("ASCENDING", "DESCENDING"):
-        q["sat:orbit_state"] = {"eq": s1_pass.lower()}
+    if spec.get("sar") and s1_orbit in ("ASCENDING", "DESCENDING"):
+        q["sat:orbit_state"] = {"eq": s1_orbit.lower()}
     if q:
         body["query"] = q
     url, items = base.rstrip("/") + "/search", []
@@ -349,7 +350,7 @@ def _run_parallel(task, jobs, workers, p0, p1, say):
 
 # ------------------------------------------------------------------ download job (runs in a QgsTask)
 def download(task, source, sensor, geom_4326, start, end, max_cloud, method, bands, product, out_path,
-             scale, epsg, clip=True, use_mask=True, s1_pass="BOTH", max_scenes=12, selected_ids=None,
+             scale, epsg, clip=True, use_mask=True, s1_orbit="BOTH", max_scenes=12, selected_ids=None,
              scenes=None, band_descs=None, meta=None, log=None, workers=8, min_clear=5.0):
     """1) read the small cloud-mask band of every candidate scene (in parallel) and measure how much of
     the AOI is really clear; 2) read the bands only for the clearest scenes (in parallel);
@@ -365,7 +366,7 @@ def download(task, source, sensor, geom_4326, start, end, max_cloud, method, ban
             log.append(m)
 
     if scenes is None:
-        scenes = search(source, sensor, geom_4326, start, end, max_cloud, s1_pass, task=task)
+        scenes = search(source, sensor, geom_4326, start, end, max_cloud, s1_orbit, task=task)
     if method == "selected":
         cands = choose_items(scenes, "selected", 0, selected_ids)
     else:
