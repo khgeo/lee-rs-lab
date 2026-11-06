@@ -1,9 +1,12 @@
 name: Release plugin
 
-# Push a tag like v2.2.0 → the plugin zip and the PDF manual are attached to a GitHub release.
+# The version in rs_lab/metadata.txt decides the release. Every push to main that changes the plugin or
+# the PDF builds lee_rs_lab.zip and attaches it, with the PDF manual, to release v<version>
+# (created on the first push of a new version, refreshed on later pushes of the same version).
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+    paths: [rs_lab/**, docs/downloads/**, .github/workflows/release.yml]
   workflow_dispatch:
 
 permissions:
@@ -14,24 +17,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check the tag matches metadata.txt
-        if: github.event_name == 'push'
-        run: |
-          v=$(grep '^version=' rs_lab/metadata.txt | cut -d= -f2)
-          [ "v$v" = "${GITHUB_REF_NAME}" ] || { echo "metadata.txt says $v but the tag is ${GITHUB_REF_NAME}"; exit 1; }
       - name: Build lee_rs_lab.zip (folder rs_lab inside, as QGIS expects)
         run: zip -r lee_rs_lab.zip rs_lab -x '*__pycache__*' '*.pyc'
       - name: Create or update the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="${GITHUB_REF_NAME}"
-          if [ "${{ github.event_name }}" != "push" ]; then tag="v$(grep '^version=' rs_lab/metadata.txt | cut -d= -f2)"; fi
-          notes="$(awk '/^changelog=/{sub(/^changelog=/,""); print; exit}' rs_lab/metadata.txt)"
+          tag="v$(grep '^version=' rs_lab/metadata.txt | cut -d= -f2 | tr -d '[:space:]')"
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" lee_rs_lab.zip docs/downloads/lee-rs-lab-manual-km.pdf --clobber
           else
+            notes="$(awk '/^changelog=/{sub(/^changelog=/,""); print; exit}' rs_lab/metadata.txt)"
             printf '%s\n\n📖 Manual: https://khgeo.github.io/lee-rs-lab/\n' "$notes" > notes.md
             gh release create "$tag" lee_rs_lab.zip docs/downloads/lee-rs-lab-manual-km.pdf \
-              --title "LEE RS Lab ${tag#v}" --notes-file notes.md
+              --target "$GITHUB_SHA" --title "LEE RS Lab ${tag#v}" --notes-file notes.md
           fi

@@ -49,10 +49,10 @@ docs/                      Manual (MkDocs Material) → GitHub Pages
 mkdocs.yml
 .github/workflows/
   deploy.yml               builds the manual on every push to main
-  release.yml              push a tag vX.Y.Z → release with lee_rs_lab.zip + PDF
+  release.yml              push to main → release v<version> with lee_rs_lab.zip + PDF
 ```
 
-Release a new version: set `version=` in `rs_lab/metadata.txt`, commit, then `git tag v2.2.1 && git push --tags`.
+Release a new version: raise `version=` in `rs_lab/metadata.txt` and push to `main` — the workflow creates release v<version> with the zip and the PDF.
 
 ## Author and licences
 
