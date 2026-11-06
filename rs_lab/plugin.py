@@ -193,7 +193,7 @@ class RSLab:
     def _rename_layers(self, groups):
         from .panel import GROUP
         for g in groups:
-            if g.name() in (GROUP, "RS Lab", "LEE RS Lab", "មន្ទីរពិសោធន៍ចាប់សញ្ញាពីចម្ងាយ"):
+            if g.name() in (GROUP, "RS Lab", "LEE RS Lab", "មន្ទីរពិសោធន៍ចាប់សញ្ញាពីចម្ងាយ", "មន្ទីរពិសោធន៍យកព័ត៌មានពីចម្ងាយ"):
                 g.setName(tr(GROUP))
         import re
         from . import raster_io as rio

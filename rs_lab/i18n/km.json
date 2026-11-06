@@ -1,6 +1,6 @@
 {
  "RS Lab": "RS Lab",
- "Remote Sensing Lab Report": "របាយការណ៍មន្ទីរពិសោធន៍ចាប់សញ្ញាពីចម្ងាយ",
+ "Remote Sensing Lab Report": "របាយការណ៍មន្ទីរពិសោធន៍យកព័ត៌មានពីចម្ងាយ",
  "Supervised classification": "ចំណាត់ថ្នាក់ដោយមានការណែនាំ",
  "Unsupervised classification": "ចំណាត់ថ្នាក់ដោយមិនមានការណែនាំ",
  "Disclaimer: produced with RS Lab for teaching, learning and research. Results depend on the images, training data and methods chosen and must be checked before any official use.": "សេចក្ដីបដិសេធ៖ ផលិតដោយ RS Lab សម្រាប់ការបង្រៀន ការរៀន និងការស្រាវជ្រាវ។ លទ្ធផលអាស្រ័យលើរូបភាព ទិន្នន័យហ្វឹកហាត់ និងវិធីសាស្ត្រដែលបានជ្រើសរើស ហើយត្រូវពិនិត្យផ្ទៀងផ្ទាត់មុនប្រើប្រាស់ជាផ្លូវការ។",
@@ -673,5 +673,5 @@
  "Run Detect change first.": "សូមចុច រកមើលការប្រែប្រួល ជាមុនសិន។",
  "This change result was made from two images, not two classified maps, so it has no from → to classes. Classify both dates, then press Detect change again.": "លទ្ធផលការប្រែប្រួលនេះ បង្កើតពីរូបភាពពីរ មិនមែនពីផែនទីចំណាត់ថ្នាក់ពីរទេ ដូច្នេះវាគ្មានថ្នាក់ ពី → ទៅ ឡើយ។ សូមចាត់ថ្នាក់កាលបរិច្ឆេទទាំងពីរ រួចចុច រកមើលការប្រែប្រួល ម្តងទៀត។",
  "Disclaimer: produced with LEE RS Lab for teaching, learning and research. Results depend on the images, training data and methods chosen and must be checked before any official use.": "សេចក្ដីបដិសេធ៖ ផលិតដោយ LEE RS Lab សម្រាប់ការបង្រៀន ការរៀន និងការស្រាវជ្រាវ។ លទ្ធផលអាស្រ័យលើរូបភាព ទិន្នន័យហ្វឹកហាត់ និងវិធីសាស្ត្រដែលបានជ្រើសរើស ហើយត្រូវពិនិត្យផ្ទៀងផ្ទាត់មុនប្រើប្រាស់ជាផ្លូវការ។",
- "LEE RS Lab — Remote Sensing Report": "LEE RS Lab — របាយការណ៍ចាប់សញ្ញាពីចម្ងាយ"
+ "LEE RS Lab — Remote Sensing Report": "LEE RS Lab — របាយការណ៍យកព័ត៌មានពីចម្ងាយ"
 }

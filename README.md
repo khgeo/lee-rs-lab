@@ -1,4 +1,4 @@
-# LEE RS Lab — ការចាប់សញ្ញាពីចម្ងាយក្នុង QGIS ដោយមិនចាំបាច់មានគណនី
+# LEE RS Lab — ការយកព័ត៌មានពីចម្ងាយក្នុង QGIS ដោយមិនចាំបាច់មានគណនី
 
 **A remote sensing lab inside QGIS — no account, no login. English / ខ្មែរ.**
 
