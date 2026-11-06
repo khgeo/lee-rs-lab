@@ -4,6 +4,7 @@ import json
 import os
 
 from qgis.core import (QgsCoordinateReferenceSystem, QgsProject, QgsRasterLayer)
+from .compat import E
 import logging
 
 LOG = logging.getLogger(__name__)
@@ -67,7 +68,7 @@ def _add_and_show(bid, tr):
     if lyr is None:
         try:
             from qgis.core import Qgis
-            iface.messageBar().pushMessage("RS Lab", tr("Could not add the basemap (no internet?)."), Qgis.Warning, 6)
+            iface.messageBar().pushMessage("RS Lab", tr("Could not add the basemap (no internet?)."), E(Qgis, "MessageLevel.Warning"), 6)
         except Exception:  # noqa: BLE001
             LOG.debug("ignored error", exc_info=True)
     elif len(QgsProject.instance().mapLayers()) == 1:      # first layer → show the world

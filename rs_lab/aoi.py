@@ -12,7 +12,7 @@ from qgis.gui import QgsMapTool, QgsRubberBand
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtGui import QColor
 
-from .compat import E, can_cancel, web_url
+from .compat import EA, E, can_cancel, web_url
 from .i18n import tr
 
 HERE = os.path.dirname(__file__)
@@ -26,7 +26,7 @@ def _poly():
         return Qgis.GeometryType.Polygon
     except Exception:  # noqa: BLE001
         from qgis.core import QgsWkbTypes
-        return QgsWkbTypes.PolygonGeometry
+        return EA((Qgis, "GeometryType.Polygon"), (QgsWkbTypes, "GeometryType.PolygonGeometry"))
 
 
 def sources():

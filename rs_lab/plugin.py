@@ -7,7 +7,7 @@ from qgis.PyQt.QtGui import QColor, QIcon
 from qgis.PyQt.QtWidgets import QDockWidget, QToolBar
 
 from . import deps
-from .compat import RIGHT_DOCK, QAction
+from .compat import EA, RIGHT_DOCK, QAction
 from .i18n import init_language, tr
 import logging
 
@@ -23,7 +23,7 @@ def _polygon_type():
         return Qgis.GeometryType.Polygon
     except Exception:  # noqa: BLE001
         from qgis.core import QgsWkbTypes
-        return QgsWkbTypes.PolygonGeometry
+        return EA((Qgis, "GeometryType.Polygon"), (QgsWkbTypes, "GeometryType.PolygonGeometry"))
 
 
 def _alive(obj):

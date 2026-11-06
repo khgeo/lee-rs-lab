@@ -22,6 +22,17 @@ def E(owner, dotted):
         return getattr(owner, dotted.split(".")[-1])
 
 
+def EA(*pairs):
+    """First enum value that resolves among (owner, 'Enum.Member') pairs, e.g. the QGIS 4 name in Qgis first,
+    then the QGIS 3 name. Each pair falls back to the short member name as E() does."""
+    for owner, dotted in pairs:
+        try:
+            return E(owner, dotted)
+        except AttributeError:
+            continue
+    raise AttributeError(str(pairs))
+
+
 def run_dialog(dlg):
     f = getattr(dlg, "exec", None) or getattr(dlg, "exec_")
     return f()

@@ -7,6 +7,7 @@ import numpy as np
 from osgeo import gdal, ogr, osr
 
 from . import catalog
+from .compat import E
 import logging
 
 LOG = logging.getLogger(__name__)
@@ -165,7 +166,7 @@ def export_vector_for_raster(qgs_layer, info, selected_only=False):
         res = QgsVectorFileWriter.writeAsVectorFormatV3(qgs_layer, tmp, ctx, opts)
     else:
         res = QgsVectorFileWriter.writeAsVectorFormatV2(qgs_layer, tmp, ctx, opts)
-    if res[0] != QgsVectorFileWriter.NoError:
+    if res[0] != E(QgsVectorFileWriter, "WriterError.NoError"):
         raise IOError("Could not export layer: %s" % (res[1] if len(res) > 1 else res))
     return tmp, "train"
 
@@ -184,9 +185,9 @@ def add_rgb_layer(path, name, rgb=(1, 2, 3), stretch="clip", group=None):
         return None
     r = QgsMultiBandColorRenderer(lyr.dataProvider(), *rgb)
     lyr.setRenderer(r)
-    limits = {"clip": QgsRasterMinMaxOrigin.CumulativeCut, "minmax": QgsRasterMinMaxOrigin.MinMax,
-              "std": QgsRasterMinMaxOrigin.StdDev}.get(stretch, QgsRasterMinMaxOrigin.CumulativeCut)
-    lyr.setContrastEnhancement(QgsContrastEnhancement.StretchToMinimumMaximum, limits)
+    limits = {"clip": E(QgsRasterMinMaxOrigin, "Limits.CumulativeCut"), "minmax": E(QgsRasterMinMaxOrigin, "Limits.MinMax"),
+              "std": E(QgsRasterMinMaxOrigin, "Limits.StdDev")}.get(stretch, E(QgsRasterMinMaxOrigin, "Limits.CumulativeCut"))
+    lyr.setContrastEnhancement(E(QgsContrastEnhancement, "ContrastEnhancementAlgorithm.StretchToMinimumMaximum"), limits)
     _add(lyr, group)
     return lyr
 
@@ -254,7 +255,7 @@ def add_single_layer(path, name, ramp="RdYlGn", vmin=None, vmax=None, group=None
         from qgis.core import Qgis
         fn.setColorRampType(Qgis.ShaderInterpolationMethod.Linear)
     except Exception:  # noqa: BLE001
-        fn.setColorRampType(QgsColorRampShader.Interpolated)
+        fn.setColorRampType(E(QgsColorRampShader, "Type.Interpolated"))
     try:
         fn.setSourceColorRamp(rp.clone())
     except Exception:  # noqa: BLE001
@@ -279,7 +280,7 @@ def set_rgb_minmax(lyr, vmin, vmax):
     for i, setter in enumerate(("setRedContrastEnhancement", "setGreenContrastEnhancement", "setBlueContrastEnhancement")):
         band = (ren.redBand(), ren.greenBand(), ren.blueBand())[i]
         ce = QgsContrastEnhancement(prov.dataType(band))
-        ce.setContrastEnhancementAlgorithm(QgsContrastEnhancement.StretchToMinimumMaximum)
+        ce.setContrastEnhancementAlgorithm(E(QgsContrastEnhancement, "ContrastEnhancementAlgorithm.StretchToMinimumMaximum"))
         ce.setMinimumValue(vmin)
         ce.setMaximumValue(vmax)
         getattr(ren, setter)(ce)
@@ -294,8 +295,8 @@ def add_gray_layer(path, name, group=None, stretch=True):
         return None
     lyr.setRenderer(QgsSingleBandGrayRenderer(lyr.dataProvider(), 1))
     if stretch:
-        lyr.setContrastEnhancement(QgsContrastEnhancement.StretchToMinimumMaximum,
-                                   QgsRasterMinMaxOrigin.CumulativeCut)
+        lyr.setContrastEnhancement(E(QgsContrastEnhancement, "ContrastEnhancementAlgorithm.StretchToMinimumMaximum"),
+                                   E(QgsRasterMinMaxOrigin, "Limits.CumulativeCut"))
     _add(lyr, group)
     return lyr
 

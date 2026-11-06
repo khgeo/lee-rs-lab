@@ -23,7 +23,7 @@ from qgis.PyQt.QtWidgets import (QAbstractButton, QAbstractItemView, QCheckBox, 
 from . import aoi as aoimod
 from . import catalog, deps, plots, procs, report, tasks
 from . import raster_io as rio
-from .compat import (web_url, CHECKABLE, CHECKED, EDITABLE, NO_EDIT, RESIZE_CONTENTS, SCROLL_OFF, SELECT_ROWS,
+from .compat import (EA, web_url, CHECKABLE, CHECKED, EDITABLE, NO_EDIT, RESIZE_CONTENTS, SCROLL_OFF, SELECT_ROWS,
                      UNCHECKED, USER_ROLE, YES, NO, E, Qt, field_filter_numeric, layer_filter,
                      set_layer_filters, label_font)
 from .i18n import language, set_language, tr
@@ -51,7 +51,7 @@ def _multipolygon():
         return Qgis.WkbType.MultiPolygon
     except Exception:  # noqa: BLE001
         from qgis.core import QgsWkbTypes
-        return QgsWkbTypes.MultiPolygon
+        return EA((Qgis, "WkbType.MultiPolygon"), (QgsWkbTypes, "Type.MultiPolygon"))
 
 
 def default_out_dir():
@@ -524,7 +524,7 @@ class Panel(QWidget):
     def msg(self, text, level="info"):
         self.status.setText(text)
         from qgis.core import Qgis
-        lv = {"info": Qgis.Info, "ok": Qgis.Success, "warn": Qgis.Warning, "err": Qgis.Critical}[level]
+        lv = {"info": E(Qgis, "MessageLevel.Info"), "ok": E(Qgis, "MessageLevel.Success"), "warn": E(Qgis, "MessageLevel.Warning"), "err": E(Qgis, "MessageLevel.Critical")}[level]
         if level != "info":
             self.iface.messageBar().pushMessage("LEE RS Lab", text, lv, 8)
 
@@ -1530,9 +1530,9 @@ class Panel(QWidget):
         if k == "histeq":
             self.save_enhanced()
             return
-        origin = {"clip": QgsRasterMinMaxOrigin.CumulativeCut, "minmax": QgsRasterMinMaxOrigin.MinMax,
-                  "std": QgsRasterMinMaxOrigin.StdDev}[k]
-        lyr.setContrastEnhancement(QgsContrastEnhancement.StretchToMinimumMaximum, origin,
+        origin = {"clip": E(QgsRasterMinMaxOrigin, "Limits.CumulativeCut"), "minmax": E(QgsRasterMinMaxOrigin, "Limits.MinMax"),
+                  "std": E(QgsRasterMinMaxOrigin, "Limits.StdDev")}[k]
+        lyr.setContrastEnhancement(E(QgsContrastEnhancement, "ContrastEnhancementAlgorithm.StretchToMinimumMaximum"), origin,
                                    lyr.extent(), 250000,
                                    ) if False else None
         # set limits explicitly so the clip % and n·σ from the panel are used
@@ -1555,7 +1555,7 @@ class Panel(QWidget):
             else:
                 lo, hi = provider.cumulativeCut(band, self.plo.value() / 100.0, self.phi.value() / 100.0)
             ce = QgsContrastEnhancement(provider.dataType(band))
-            ce.setContrastEnhancementAlgorithm(QgsContrastEnhancement.StretchToMinimumMaximum)
+            ce.setContrastEnhancementAlgorithm(E(QgsContrastEnhancement, "ContrastEnhancementAlgorithm.StretchToMinimumMaximum"))
             ce.setMinimumValue(lo)
             ce.setMaximumValue(hi)
             getattr(ren, setter)(ce)
@@ -2935,11 +2935,11 @@ class Panel(QWidget):
         try:
             MM = Qgis.LayoutUnit.Millimeters
         except AttributeError:
-            MM = QgsUnitTypes.LayoutMillimeters
+            MM = EA((Qgis, "LayoutUnit.Millimeters"), (QgsUnitTypes, "LayoutUnit.LayoutMillimeters"))
         try:
             KM = Qgis.DistanceUnit.Kilometers
         except AttributeError:
-            KM = QgsUnitTypes.DistanceKilometers
+            KM = EA((Qgis, "DistanceUnit.Kilometers"), (QgsUnitTypes, "DistanceUnit.DistanceKilometers"))
         proj = QgsProject.instance()
         lyr = self.lo_layer.currentLayer()
         title = self.lo_title.text().strip() or (lyr.name() if lyr else tr("Map"))
