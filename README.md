@@ -32,6 +32,8 @@ whose red numbers match the steps.
 
 ## Install the plugin
 
+From QGIS: **Plugins › Manage and Install Plugins › Settings › Show also experimental plugins**, then search *LEE RS Lab* (once it is approved on plugins.qgis.org). Or from the zip:
+
 1. Download **lee_rs_lab.zip** from [Releases](https://github.com/khgeo/lee-rs-lab/releases/latest).
 2. QGIS 3.22 – 3.44 → **Plugins › Manage and Install Plugins › Install from ZIP** → choose the zip → **Install Plugin**.
 3. Click the LEE RS Lab icon on the toolbar. Optional: *1 Data › Setup › Install scikit-learn* for Random Forest, SVM and kNN.
