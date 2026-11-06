@@ -1,0 +1,61 @@
+# LEE RS Lab — ការចាប់សញ្ញាពីចម្ងាយក្នុង QGIS ដោយមិនចាំបាច់មានគណនី
+
+**A remote sensing lab inside QGIS — no account, no login. English / ខ្មែរ.**
+
+[![Manual](https://img.shields.io/badge/📖_សៀវភៅណែនាំ-khgeo.github.io%2Flee--rs--lab-0f8a96)](https://khgeo.github.io/lee-rs-lab/)
+[![Download](https://img.shields.io/github/v/release/khgeo/lee-rs-lab?label=plugin)](https://github.com/khgeo/lee-rs-lab/releases/latest)
+[![Plugin: GPL-2.0+](https://img.shields.io/badge/plugin-GPL--2.0%2B-blue)](LICENSE)
+[![Manual: CC BY-SA 4.0](https://img.shields.io/badge/manual-CC%20BY--SA%204.0-lightgrey)](https://creativecommons.org/licenses/by-sa/4.0/)
+
+LEE (*Local Earth Engine*) RS Lab downloads free imagery (Sentinel-2, Landsat 5–9, Sentinel-1, MODIS, DEM,
+land cover, surface water) from Microsoft Planetary Computer and Earth Search, and runs the whole remote sensing
+workflow on your own computer: composites, band combinations, indices, filters, PCA, unsupervised and supervised
+classification, accuracy assessment (Cochran sampling, Olofsson area-adjusted estimates), from → to change detection
+with a Sankey diagram, map layout, a PDF report, and Earth-Engine-style scripts (32 examples).
+
+![Change detection 2024 → 2026](docs/assets/img/f34.jpg)
+
+## 📖 Manual (Khmer, 15 lessons)
+
+Read online: **https://khgeo.github.io/lee-rs-lab/** · PDF: [lee-rs-lab-manual-km.pdf](docs/downloads/lee-rs-lab-manual-km.pdf)
+
+| | |
+|---|---|
+| 1–4 | Area of interest · search scenes · composite & download · DEM and other datasets |
+| 5–7 | Band combinations & stretch · NDVI / MNDWI · filters & PCA |
+| 8–11 | K-means · training data · Random Forest and 6 other classifiers · accuracy |
+| 12–13 | Clean-up, polygons & map layout · from → to change 2024 → 2026 with Sankey |
+| 14–15 | LEE scripts (land surface temperature, Sentinel-1 rice calendar) · PDF report |
+
+Every lesson uses one real example — Moha Khnhoung commune, Kaoh Soutin, Kampong Cham — with annotated screenshots
+whose red numbers match the steps.
+
+## Install the plugin
+
+1. Download **lee_rs_lab.zip** from [Releases](https://github.com/khgeo/lee-rs-lab/releases/latest).
+2. QGIS 3.22 – 3.44 → **Plugins › Manage and Install Plugins › Install from ZIP** → choose the zip → **Install Plugin**.
+3. Click the LEE RS Lab icon on the toolbar. Optional: *1 Data › Setup › Install scikit-learn* for Random Forest, SVM and kNN.
+
+The **Help** button in the plugin opens a short offline guide with a link to this manual.
+
+## Repository
+
+```
+rs_lab/                    QGIS plugin (folder name QGIS installs)
+docs/                      Manual (MkDocs Material) → GitHub Pages
+  index.md, lessons/       15 lessons
+  assets/img/              annotated screenshots and charts
+  downloads/               PDF of the manual
+mkdocs.yml
+.github/workflows/
+  deploy.yml               builds the manual on every push to main
+  release.yml              push a tag vX.Y.Z → release with lee_rs_lab.zip + PDF
+```
+
+Release a new version: set `version=` in `rs_lab/metadata.txt`, commit, then `git tag v2.2.1 && git push --tags`.
+
+## Author and licences
+
+YAM Sarath (យាំ សារដ្ឋ) · Part of the [khgeo](https://khgeo.github.io/) book series.
+Plugin code: GPL-2.0-or-later. Manual text and figures: CC BY-SA 4.0. Khmer fonts (Battambang, Siemreap, Moul) by
+Danh Hong, SIL Open Font License.

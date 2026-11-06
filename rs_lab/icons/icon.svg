@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7fbff"/><stop offset="1" stop-color="#e3eff9"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="124" height="124" rx="22" fill="url(#bg)" stroke="#9bbbd6" stroke-width="2"/>
+  <!-- stacked spectral bands (image cube) -->
+  <g stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round">
+    <polygon points="30,98 74,98 98,78 54,78" fill="#c0392b"/>
+    <polygon points="30,86 74,86 98,66 54,66" fill="#27ae60"/>
+    <polygon points="30,74 74,74 98,54 54,54" fill="#1f6fb2"/>
+  </g>
+  <!-- pixel grid on top band -->
+  <g stroke="#ffffff" stroke-width="1.2" opacity="0.85">
+    <line x1="41" y1="74" x2="65" y2="54"/><line x1="52" y1="74" x2="76" y2="54"/><line x1="63" y1="74" x2="87" y2="54"/>
+    <line x1="38" y1="67.3" x2="82" y2="67.3"/><line x1="46" y1="60.7" x2="90" y2="60.7"/>
+  </g>
+  <!-- satellite -->
+  <g transform="translate(86,30) rotate(-35)">
+    <rect x="-24" y="-6" width="14" height="12" fill="#1f6fb2" stroke="#0e3d66" stroke-width="1.5"/>
+    <rect x="10" y="-6" width="14" height="12" fill="#1f6fb2" stroke="#0e3d66" stroke-width="1.5"/>
+    <line x1="-10" y1="0" x2="10" y2="0" stroke="#0e3d66" stroke-width="2"/>
+    <rect x="-6" y="-8" width="12" height="16" rx="2" fill="#f4b400" stroke="#0e3d66" stroke-width="1.5"/>
+  </g>
+  <!-- sensing beam -->
+  <path d="M80,40 L58,58" stroke="#f4b400" stroke-width="2.5" stroke-dasharray="4 3" stroke-linecap="round"/>
+  <text x="14" y="34" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="22" fill="#0e3d66">RS</text>
+  <g>
+    <rect x="70" y="100" width="50" height="22" rx="6" fill="#ffffff" stroke="#1f6fb2" stroke-width="2.5"/>
+    <text x="95" y="117" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="16" fill="#1f6fb2">LEE</text>
+  </g>
+</svg>

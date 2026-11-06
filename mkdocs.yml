@@ -1,0 +1,83 @@
+site_name: សៀវភៅណែនាំ LEE RS Lab
+site_description: ការចាប់សញ្ញាពីចម្ងាយក្នុង QGIS ដោយមិនចាំបាច់មានគណនី — 15 មេរៀន ជំហានម្ដងមួយៗ
+site_author: YAM Sarath (យាំ សារដ្ឋ)
+site_url: https://khgeo.github.io/lee-rs-lab/
+repo_url: https://github.com/khgeo/lee-rs-lab
+repo_name: lee-rs-lab
+edit_uri: edit/main/docs/
+copyright: សៀវភៅ CC BY-SA 4.0 · កម្មវិធីជំនួយ GPL-2.0-or-later
+
+theme:
+  name: material
+  language: en          # Material has no Khmer UI pack; content is Khmer
+  font: false           # Khmer fonts are loaded locally in CSS
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - search.highlight
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: ប្ដូរទៅរបៀបងងឹត
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: ប្ដូរទៅរបៀបភ្លឺ
+
+extra_css:
+  - assets/css/local-fonts.css
+  - assets/css/khmer.css
+  - assets/css/manual.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences
+  - toc:
+      permalink: "¶"
+      toc_depth: 3
+
+plugins:
+  - search
+
+extra:
+  homepage: https://khgeo.github.io/
+  social:
+    - icon: material/bookshelf
+      link: https://khgeo.github.io/
+      name: ស៊េរីសៀវភៅ khgeo
+    - icon: material/download
+      link: https://github.com/khgeo/lee-rs-lab/releases/latest
+      name: ទាញយកកម្មវិធីជំនួយ
+
+nav:
+  - ទំព័រដើម: index.md
+  - "មេរៀនទី 1 — កំណត់តំបន់សិក្សា (AOI)": lessons/lesson-01.md
+  - "មេរៀនទី 2 — ស្វែងរករូបភាពផ្កាយរណប": lessons/lesson-02.md
+  - "មេរៀនទី 3 — ផ្សំរូបភាព និងទាញយក": lessons/lesson-03.md
+  - "មេរៀនទី 4 — សំណុំទិន្នន័យផ្សេងទៀត និងការរៀបចំ": lessons/lesson-04.md
+  - "មេរៀនទី 5 — បន្សំប៊ែន និងការលាតពន្លឺ": lessons/lesson-05.md
+  - "មេរៀនទី 6 — សន្ទស្សន៍វិសាលគម (NDVI, MNDWI)": lessons/lesson-06.md
+  - "មេរៀនទី 7 — តម្រងលំហ និង PCA": lessons/lesson-07.md
+  - "មេរៀនទី 8 — ថ្នាក់ និងចំណាត់ថ្នាក់មិនណែនាំ (K-means)": lessons/lesson-08.md
+  - "មេរៀនទី 9 — ចំណាត់ថ្នាក់មានណែនាំ៖ បង្កើតទិន្នន័យហ្វឹកហាត់": lessons/lesson-09.md
+  - "មេរៀនទី 10 — ហត្ថលេខាវិសាលគម និងចំណាត់ថ្នាក់ Random Forest": lessons/lesson-10.md
+  - "មេរៀនទី 11 — ការវាយតម្លៃភាពត្រឹមត្រូវ": lessons/lesson-11.md
+  - "មេរៀនទី 12 — សម្អាតផែនទី នាំចេញពហុកោណ និងប្លង់ផែនទី": lessons/lesson-12.md
+  - "មេរៀនទី 13 — ការប្រែប្រួល ពី → ទៅ (2024 → 2026) និងដ្យាក្រាម Sankey": lessons/lesson-13.md
+  - "មេរៀនទី 14 — ស្គ្រីប LEE (Local Earth Engine)": lessons/lesson-14.md
+  - "មេរៀនទី 15 — របាយការណ៍ PDF": lessons/lesson-15.md

@@ -1,0 +1,64 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><title>LEE RS Lab — User guide</title><style>body{font-family:'Khmer OS System','Khmer OS Battambang','Leelawadee UI',Arial,sans-serif;max-width:860px;margin:24px auto;padding:0 16px;line-height:1.6;color:#1d2a35;background:#fbfdff}
+h1{color:#1f5f8b}h2{color:#1f6fb2;border-bottom:2px solid #dbe8f3;padding-bottom:4px;margin-top:28px}
+code{background:#eef4f9;padding:1px 5px;border-radius:3px}.tip{background:#fff7e0;border-left:4px solid #f4b400;padding:8px 12px}
+table{border-collapse:collapse}td,th{border:1px solid #cbd9e6;padding:4px 8px}</style></head><body><h1>LEE RS Lab — User guide</h1><div style="border:2px solid #1f6fb2;border-radius:8px;padding:10px 14px;margin:8px 0 14px;background:#eef6fd">📖 <b>Full manual</b> — 15 step-by-step lessons with annotated screenshots (Khmer, Moha Khnhoung example): <a href="https://khgeo.github.io/lee-rs-lab/">read online</a> · <a href="https://github.com/khgeo/lee-rs-lab/releases/latest">download the PDF</a><br><small>This page is the short guide and works offline.</small></div><h2>Workflow</h2><table><tr><th>1 Data</th><td><b>Area of interest</b>: country → province → district → commune (any country, Cambodia preset with Khmer names; “— whole country —”), map extent, drawn box or polygon layer; the project CRS follows the AOI's UTM zone. <b>Imagery — search scenes</b> (default Microsoft Planetary Computer): Sentinel-2 L2A, Landsat 5/7/8/9 L2, Sentinel-1 RTC; Earth Search (AWS); or local band files. <b>Composite &amp; download</b>: cloud masks are checked first so only clear scenes are read; median, mean, p25, min, greenest, least-cloudy or selected scenes. <b>More datasets</b>: Copernicus DEM, NASADEM, ESA WorldCover, annual land cover, JRC surface water, MODIS NDVI. <b>⚙ Setup</b>: output folder, connection test, scikit-learn, boundary cache, log.</td></tr><tr><th>2 Enhance</th><td>Band combination presets and stretches, histograms, statistics, spectral profile tool · NDVI, EVI, SAVI, NDWI, MNDWI, NDMI, NDBI, NBR, BSI, GNDVI, NDRE, UI, RVI and your own band math, Otsu mask · spatial filters · PCA.</td></tr><tr><th>3 Classify</th><td><b>Classes (legend)</b> shared by all steps, with schemes (RS Lab, LULC level 1, Auto 7, ESA WorldCover) · K-means / ISODATA and cluster labelling · classes, training polygons, signatures, J–M separability, feature space · Minimum Distance, Maximum Likelihood, SAM, Parallelepiped, Random Forest, SVM, kNN · <b>automatic training points from ESA WorldCover</b> · accuracy: Cochran sample size (proportional / equal allocation, minimum per class), <b>point labelling</b> with class buttons, validation points, confusion matrix, OA, kappa, user's / producer's accuracy and <b>area-adjusted areas with 95 % confidence intervals</b> (Olofsson et al. 2014) · <b>Clean up &amp; export polygons</b>: sieve to a minimum mapping unit, polygons with class name and area · <b>Map layout</b>: A4 map with legend, scale bar, north arrow, sources, accuracy.</td></tr><tr><th>4 Change</th><td><b>From → to</b> between two classified maps: matrix (ha), gains / losses / net per class, largest transitions, <b>Sankey diagram</b>, date 1 vs date 2 area chart, map of one chosen transition (e.g. Forest → Cropland), CSV; or image differencing.</td></tr><tr><th>5 LEE</th><td><b>LEE — Local Earth Engine</b>: GEE-style scripts (ImageCollection, filterDate, median, normalizedDifference, Map.addLayer, timeSeries…) that run on your computer with free data; 32 examples (vegetation, indices, red edge, land surface temperature, urban expansion, forest loss, rice calendar from Sentinel-1, radar, water, flood, burn, drought, terrain, land cover, historical Landsat, data quality); <i>API reference</i> lists every function. <code>lee.Image.open("layer name")</code> reads a project raster; <b>Use a result in the other tabs</b> sends outputs to Enhance, Classify, Accuracy or Change.</td></tr><tr><th>Header</th><td>Language · basemap menu (also on the toolbar icon's arrow) · Help · PDF report.</td></tr></table><h2>Lessons</h2><div><b>Where the data come from</b><br>
+RS Lab needs <b>no account and no login</b>. Satellite images are read from free, open STAC catalogues of
+<i>Cloud-Optimised GeoTIFFs</i>: Microsoft Planetary Computer and Earth Search (Amazon Web Services).
+A COG lets QGIS read only the pixels inside your AOI, so you never download a whole 100 km scene.
+Composites, indices and classifications are computed on <b>your own computer</b>.
+Use <i>Test connections</i> to check that every source can be reached from your network.</div><hr><div><b>Satellite images and their levels</b><br>
+<b>Level-1 / TOA</b> = reflectance measured at the top of the atmosphere (includes haze).
+<b>Level-2 / SR</b> = surface reflectance after atmospheric correction — best for analysis.<br>
+<b>Raw DN</b> are the integers stored by the provider (Sentinel-2: reflectance × 10000;
+Landsat C2 L2: reflectance = DN × 0.0000275 − 0.2). <b>Scaled</b> converts them to 0–1 reflectance.<br>
+A <b>composite</b> combines many dates pixel by pixel; the median removes most clouds and shadows.
+Spatial resolution: Sentinel-2 10–60 m, Landsat 30 m (15 m pan), Sentinel-1 10 m.</div><hr><div><b>Band composites and contrast enhancement</b><br>
+A screen shows three colours (Red, Green, Blue). We can put <i>any</i> three bands into them.
+True colour = Red, Green, Blue bands. False colour (NIR, Red, Green) shows healthy vegetation in red
+because leaves reflect near-infrared strongly.<br>
+Raw values occupy a narrow range, so images look dark. <b>Contrast stretching</b> maps that range to
+0–255: <i>min–max</i>, <i>percent clip</i> (ignore the 2% extremes), <i>standard deviation</i>, and
+<i>histogram equalization</i> (spreads values so each grey level has equal frequency).
+Use the <b>spectral profile</b> tool to click pixels and compare their spectral signatures.</div><hr><div><b>Spectral indices</b><br>
+An index combines bands to highlight one feature and reduce illumination effects.
+NDVI = (NIR − Red)/(NIR + Red): water &lt; 0, bare soil ≈ 0.1–0.2, dense vegetation &gt; 0.6.
+MNDWI uses Green and SWIR to map water; NDBI highlights built-up areas; NBR shows burnt areas.
+<b>Otsu</b> chooses a threshold automatically from the histogram (e.g. water / non-water).
+Indices must be computed on <i>reflectance</i>; on raw DN the ratio is the same for SR bands but
+not for indices with constants (EVI, SAVI) — use scaled reflectance for those.</div><hr><div><b>Spatial filters and PCA</b><br>
+A filter moves a small window (kernel) over the image. <i>Low-pass</i> (mean, Gaussian, median)
+smooths noise; <i>high-pass</i> sharpens; <i>edge</i> filters (Sobel, Laplacian) find boundaries such as
+roads, canals and field edges. Median keeps edges better than mean.<br>
+<b>Principal Component Analysis</b> rotates correlated bands into uncorrelated components. PC1 holds
+most of the variance (overall brightness); later PCs hold contrasts and noise.</div><hr><div><b>Unsupervised classification</b><br>
+The computer groups pixels with similar spectra into <i>clusters</i> without any training data.
+<b>K-means</b>: choose k, assign each pixel to the nearest cluster centre, move centres, repeat.
+<b>ISODATA</b> also splits wide clusters, merges close ones and removes tiny ones.<br>
+Afterwards the analyst must <b>label</b> each cluster (e.g. cluster 3 = water) using the image and
+local knowledge. Ask for more clusters than classes, then merge them by giving the same name.</div><hr><div><b>Supervised classification</b><ol>
+<li>Define classes (id, name, colour).</li>
+<li>Digitize <b>training polygons</b> over pure, typical areas of each class — spread them across the
+whole image, at least 10–20 polygons per class.</li>
+<li>Check the <b>signatures</b> and <b>separability</b> (Jeffries–Matusita &gt; 1.9 = good; &lt; 1.0 = classes overlap).</li>
+<li>Choose a classifier: <i>Minimum Distance</i> (nearest class mean), <i>Parallelepiped</i> (box of ±k·σ),
+<i>Maximum Likelihood</i> (Gaussian probability, uses covariance), <i>Spectral Angle Mapper</i>
+(shape of the spectrum, ignores brightness), <i>Random Forest / SVM</i> (machine learning).</li>
+<li>Smooth with a majority filter, then assess accuracy with <b>independent</b> reference data.</li></ol></div><hr><div><b>Accuracy assessment</b><br>
+Compare the map with reference data that were <i>not</i> used for training. The <b>confusion
+(error) matrix</b> has map classes in rows and reference classes in columns.<br>
+<b>Overall accuracy</b> = correct / total. <b>Producer's accuracy</b> = correct / column total
+(1 − omission error). <b>User's accuracy</b> = correct / row total (1 − commission error).
+<b>Kappa</b> corrects for chance agreement (&gt; 0.8 strong, 0.4–0.8 moderate).<br>
+Generate <i>stratified random points</i>, label each one from high-resolution imagery or field
+visits in the field <i>ref_class</i>, then compute.</div><hr><div><b>Change detection</b><br>
+<b>Image differencing</b>: subtract an index (e.g. NDVI) of date 1 from date 2. Large negative values =
+loss (deforestation, flooding, harvest); large positive = gain. Thresholds at mean ± k·σ.<br>
+<b>Post-classification comparison</b>: classify both dates, then cross-tabulate them in a
+<i>change matrix</i> ("from → to"). It tells <i>what</i> changed into <i>what</i>, but errors of both
+maps add up. Both images should be from the same season and sensor if possible.</div><hr><div><b>Scripting like Google Earth Engine — on your own computer (LEE)</b><br>
+A script describes a <i>collection</i> of images (dataset, dates, place, cloud limit), reduces it to one image
+(<code>median()</code>, <code>mean()</code>, <code>qualityMosaic()</code>…), computes new bands
+(<code>normalizedDifference</code>, <code>expression</code>, <code>slope</code>…) and shows results with
+<code>Map.addLayer</code>, <code>print</code> and charts. Only the AOI pixels are read, clouds are masked
+automatically and reflectance is already 0–1. Choose an example, change dates or thresholds, press <b>Run</b>.
+Large AOIs are computed at coarser pixels — set <code>lee.config(scale=30)</code> yourself to go faster.</div><hr><p><small>YAM Sarath · github.com/khgeo · data: Microsoft Planetary Computer, Element 84 Earth Search, OCHA HDX, geoBoundaries, Open Development Cambodia</small></p></body></html>

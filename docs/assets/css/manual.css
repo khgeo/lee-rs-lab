@@ -1,0 +1,7 @@
+/* LEE RS Lab manual: figures, captions, formulas */
+.md-typeset img { display: block; margin: 1rem auto .3rem; border-radius: 4px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.18); cursor: zoom-in; }
+.md-typeset p > em:only-child { display: block; text-align: center; font-style: normal;
+  color: var(--md-default-fg-color--light); font-size: .68rem; margin-bottom: 1.2rem; }
+.md-typeset .formula { text-align: center; font-family: var(--md-code-font-family);
+  background: var(--md-code-bg-color); padding: .6rem; border-radius: 4px; }
