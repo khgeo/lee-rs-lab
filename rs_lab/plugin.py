@@ -76,10 +76,12 @@ class RSLab:
         self.iface.mapCanvas().destinationCrsChanged.connect(self._reshow_aoi)
         self.iface.addPluginToRasterMenu(NAME, self.action)
         QgsProject.instance().cleared.connect(self.reset)
+        QgsProject.instance().readProject.connect(self._on_read_project)
 
     def unload(self):
         try:
             QgsProject.instance().cleared.disconnect(self.reset)
+            QgsProject.instance().readProject.disconnect(self._on_read_project)
         except Exception:  # noqa: BLE001
             LOG.debug("ignored error", exc_info=True)
         if _alive(self.panel):
@@ -211,6 +213,12 @@ class RSLab:
             # legend class labels (Water, Cluster 1, Decrease, A → B …)
             if rio.relabel_layer(lyr) and view is not None:
                 view.refreshLayerSymbology(lyr.id())
+
+    def _on_read_project(self, *_):
+        """A project was opened: take its AOI back (saved entry or AOI layer)."""
+        if self.panel is not None:
+            from qgis.PyQt.QtCore import QTimer
+            QTimer.singleShot(300, self.panel.restore_aoi)
 
     # ------------------------------------------------------------ reset on new project
     def reset(self):

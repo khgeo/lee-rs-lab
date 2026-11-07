@@ -29,6 +29,11 @@ L57_L2_BANDS = [
     ("SR_B4", "nir", "830 nm", 30), ("SR_B5", "swir1", "1650 nm", 30), ("SR_B7", "swir2", "2215 nm", 30),
     ("ST_B6", "tir", "11.45 um (Kelvin)", 120),
 ]
+# Landsat 1-5 MSS, Collection 2 Level-1 (calibrated DN, 60 m) — band numbers as on Landsat 1-3
+MSS_L1_BANDS = [
+    ("B4", "green", "500-600 nm", 60), ("B5", "red", "600-700 nm", 60), ("B6", "nir2", "700-800 nm", 60),
+    ("B7", "nir", "800-1100 nm", 60),
+]
 S1_BANDS = [("VV", "vv", "C-band VV (dB)", 10), ("VH", "vh", "C-band VH (dB)", 10)]
 
 SENSORS = {
@@ -56,11 +61,15 @@ SENSORS = {
     "L5_L2": dict(label="Landsat 5 TM — Collection 2 Level-2 (1984–2012)", coll="LANDSAT/LT05/C02/T1_L2",
                   bands=L57_L2_BANDS, cloud="CLOUD_COVER", mask="landsat", scale=2.75e-5, offset=-0.2,
                   res=30, start="1984-03-16", family="landsat"),
+    "LM_L1": dict(label="Landsat 1–5 MSS — Collection 2 Level-1, raw DN (1972–2013)", coll="LANDSAT/LM0x/C02/T1",
+                  bands=MSS_L1_BANDS, cloud="CLOUD_COVER", mask="landsat", scale=1.0, offset=0.0,
+                  res=60, start="1972-07-25", end="2013-01-07", suggest=("1989-11-01", "1990-04-30"),
+                  family="landsat", dn_only=True),
     "S1_GRD": dict(label="Sentinel-1 SAR GRD — IW, VV+VH, dB (radar, sees through cloud)", coll="COPERNICUS/S1_GRD",
                    bands=S1_BANDS, cloud=None, mask=None, scale=1.0, offset=0.0, res=10,
                    start="2014-10-03", family="s1", float_native=True),
 }
-SENSOR_ORDER = ["S2_SR", "S2_TOA", "L9_L2", "L8_L2", "L9_TOA", "L8_TOA", "L7_L2", "L5_L2", "S1_GRD"]
+SENSOR_ORDER = ["S2_SR", "S2_TOA", "L9_L2", "L8_L2", "L9_TOA", "L8_TOA", "L7_L2", "L5_L2", "LM_L1", "S1_GRD"]
 
 # Thermal band scale for Landsat L2 (Kelvin)
 LST_SCALE, LST_OFFSET = 0.00341802, 149.0

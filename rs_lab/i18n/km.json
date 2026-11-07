@@ -674,5 +674,12 @@
  "This change result was made from two images, not two classified maps, so it has no from → to classes. Classify both dates, then press Detect change again.": "លទ្ធផលការប្រែប្រួលនេះ បង្កើតពីរូបភាពពីរ មិនមែនពីផែនទីចំណាត់ថ្នាក់ពីរទេ ដូច្នេះវាគ្មានថ្នាក់ ពី → ទៅ ឡើយ។ សូមចាត់ថ្នាក់កាលបរិច្ឆេទទាំងពីរ រួចចុច រកមើលការប្រែប្រួល ម្តងទៀត។",
  "Disclaimer: produced with LEE RS Lab for teaching, learning and research. Results depend on the images, training data and methods chosen and must be checked before any official use.": "សេចក្ដីបដិសេធ៖ ផលិតដោយ LEE RS Lab សម្រាប់ការបង្រៀន ការរៀន និងការស្រាវជ្រាវ។ លទ្ធផលអាស្រ័យលើរូបភាព ទិន្នន័យហ្វឹកហាត់ និងវិធីសាស្ត្រដែលបានជ្រើសរើស ហើយត្រូវពិនិត្យផ្ទៀងផ្ទាត់មុនប្រើប្រាស់ជាផ្លូវការ។",
  "LEE RS Lab — Remote Sensing Report": "LEE RS Lab — របាយការណ៍យកព័ត៌មានពីចម្ងាយ",
- "Apply automatically when a setting changes": "អនុវត្តដោយស្វ័យប្រវត្តិ ពេលប្ដូរការកំណត់"
+ "Apply automatically when a setting changes": "អនុវត្តដោយស្វ័យប្រវត្តិ ពេលប្ដូរការកំណត់",
+ "Keep the AOI as a layer (saved with the project)": "រក្សាតំបន់សិក្សាជាស្រទាប់ (រក្សាទុកជាមួយគម្រោង)",
+ "AOI restored from the project: %s": "បានយកតំបន់សិក្សាពីគម្រោងមកវិញ៖ %s",
+ "Could not create the AOI layer.": "មិនអាចបង្កើតស្រទាប់តំបន់សិក្សាបានទេ។",
+ "%s covers %s to %s — dates moved into that period.": "%s មានទិន្នន័យពី %s ដល់ %s — កាលបរិច្ឆេទត្រូវបានប្ដូរមកក្នុងរយៈពេលនោះ។",
+ "today": "ថ្ងៃនេះ",
+ "Landsat 1–5 MSS — Collection 2 Level-1, raw DN (1972–2013)": "Landsat 1–5 MSS — Collection 2 កម្រិត 1, DN ដើម (1972–2013)",
+ "Free, no login. Sentinel-2 L2A, Landsat 5/7/8/9 Level-2, Landsat 1–5 MSS Level-1 (1972–2013) and Sentinel-1 RTC (terrain-corrected, dB). Clouds masked with SCL / QA_PIXEL; composite on your computer.": "ឥតគិតថ្លៃ មិនចាំបាច់ចូលគណនី។ Sentinel-2 L2A, Landsat 5/7/8/9 Level-2, Landsat 1–5 MSS Level-1 (1972–2013) និង Sentinel-1 RTC (កែតម្រូវសណ្ឋានដី, dB)។ បិទពពកដោយ SCL / QA_PIXEL; ផ្សំរូបភាពលើកុំព្យូទ័ររបស់អ្នក។"
 }

@@ -53,6 +53,8 @@ STAC = {
         "L8_L2": dict(coll="landsat-c2-l2", platform="landsat-8", assets=L89_PC, mask=("qa_pixel", "landsat")),
         "L7_L2": dict(coll="landsat-c2-l2", platform="landsat-7", assets=L57_PC, mask=("qa_pixel", "landsat")),
         "L5_L2": dict(coll="landsat-c2-l2", platform="landsat-5", assets=L57_PC, mask=("qa_pixel", "landsat")),
+        "LM_L1": dict(coll="landsat-c2-l1", assets={"B4": "green", "B5": "red", "B6": "nir08", "B7": "nir09"},
+                      mask=("qa_pixel", "landsat")),
         "S1_GRD": dict(coll="sentinel-1-rtc", assets={"VV": "vv", "VH": "vh"}, mask=None, sar=True),
     },
 }

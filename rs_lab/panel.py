@@ -352,6 +352,9 @@ class Panel(QWidget):
         self.profile_tool = None
         self.proc = None
         self.build()
+        if self.aoi_geom is None:
+            from qgis.PyQt.QtCore import QTimer
+            QTimer.singleShot(300, self.restore_aoi)
 
     # ------------------------------------------------------------ layout
     def build(self):
@@ -711,6 +714,11 @@ class Panel(QWidget):
         self.cb_dist.currentIndexChanged.connect(self.on_dist)
         gl.addLayout(row(btn(tr("Use this AOI"), self.set_aoi, primary=True), btn(tr("Zoom"), self.zoom_aoi),
                          btn(tr("Add AOI to map"), self.add_aoi_layer)))
+        self.aoi_keep = QCheckBox(tr("Keep the AOI as a layer (saved with the project)"))
+        self.aoi_keep.setObjectName("aoi_keep")
+        self.aoi_keep.setChecked(QgsSettings().value("rs_lab/aoi_layer", True, type=bool))
+        self.aoi_keep.toggled.connect(lambda v: QgsSettings().setValue("rs_lab/aoi_layer", bool(v)))
+        gl.addWidget(self.aoi_keep)
         self.aoi_lab = QLabel(tr("No AOI yet."))
         self.aoi_lab.setWordWrap(True)
         gl.addWidget(self.aoi_lab)
@@ -897,7 +905,19 @@ class Panel(QWidget):
         self.s1pass.setEnabled(k == "S1_GRD")
         self.cloud.setEnabled(k != "S1_GRD")
         self.mask.setEnabled(k != "S1_GRD")
-        self.product.setEnabled(not s.get("float_native", False))
+        self.product.setEnabled(not s.get("float_native", False) and not s.get("dn_only", False))
+        if s.get("dn_only"):
+            self.product.setCurrentIndex(max(0, self.product.findData("raw")))
+        # sensors that ended long ago (Landsat MSS): move the dates into their lifetime
+        d0, d1 = self.d0.date().toString("yyyy-MM-dd"), self.d1.date().toString("yyyy-MM-dd")
+        if (s.get("end") and d0 > s["end"]) or d1 < s.get("start", "0000"):
+            from qgis.PyQt.QtCore import QDate
+            y = QDate.currentDate().year()
+            a, b = s.get("suggest") or ("%d-11-01" % (y - 1), "%d-03-31" % y)
+            self.d0.setDate(QDate.fromString(a, "yyyy-MM-dd"))
+            self.d1.setDate(QDate.fromString(b, "yyyy-MM-dd"))
+            self.msg(tr("%s covers %s to %s — dates moved into that period.") % (
+                s["label"].split(" — ")[0], s.get("start"), s.get("end") or tr("today")), "info")
         self.scenes.setRowCount(0)
         self.stac_scenes = None
 
@@ -919,7 +939,9 @@ class Panel(QWidget):
         g = QgsGeometry.fromRect(rect)
         self._set_aoi_geom(g, self.canvas.mapSettings().destinationCrs(), tr("Drawn rectangle"))
 
-    def _set_aoi_geom(self, g, crs, label):
+    def _set_aoi_geom(self, g, crs, label, keep_admin=False, add_layer=True):
+        if not keep_admin:
+            self.session.pop("aoi_admin", None)
         g = QgsGeometry(g)
         if crs.authid() != "EPSG:4326":
             g.transform(QgsCoordinateTransform(crs, QgsCoordinateReferenceSystem("EPSG:4326"), QgsProject.instance()))
@@ -935,6 +957,54 @@ class Panel(QWidget):
         self.aoi_lab.setText("<b>%s</b> — %.1f km²" % (label, km2))
         self.apply_aoi_crs()
         self.plugin.show_aoi(g)
+        self._remember_aoi()
+        if add_layer and self.aoi_keep.isChecked():
+            self.add_aoi_layer(quiet=True)
+
+    # --- the AOI is kept in the project (and as a layer), so it survives a plugin update or reopening
+    def _remember_aoi(self):
+        import json
+        proj = QgsProject.instance()
+        proj.writeEntry("rs_lab", "aoi_wkt", self.aoi_geom.asWkt(7))
+        proj.writeEntry("rs_lab", "aoi_label", self.session.get("aoi_label", ""))
+        proj.writeEntry("rs_lab", "aoi_admin", json.dumps(self.session.get("aoi_admin") or {}, ensure_ascii=False))
+
+    def restore_aoi(self):
+        """Take the AOI back from the project (entry or the AOI layer) when the panel starts or a project opens."""
+        import json
+        if self.aoi_geom is not None:
+            return
+        proj = QgsProject.instance()
+        wkt = proj.readEntry("rs_lab", "aoi_wkt", "")[0]
+        label = proj.readEntry("rs_lab", "aoi_label", "")[0]
+        g = QgsGeometry.fromWkt(wkt) if wkt else None
+        if g is None or g.isEmpty():
+            g = None
+            for lyr in proj.mapLayers().values():
+                is_aoi = lyr.customProperty("rslab_aoi") or lyr.customProperty("rslab_key") == "AOI"
+                if is_aoi and isinstance(lyr, QgsVectorLayer) and lyr.isValid():
+                    feats = list(lyr.getFeatures())
+                    if feats:
+                        g = QgsGeometry.unaryUnion([f.geometry() for f in feats])
+                        if lyr.crs().authid() != "EPSG:4326":
+                            g.transform(QgsCoordinateTransform(lyr.crs(), QgsCoordinateReferenceSystem("EPSG:4326"),
+                                                               proj))
+                        try:
+                            label = label or str(feats[0]["name_km" if language() == "km" else "name"] or "")
+                        except KeyError:
+                            label = label or lyr.name()
+                        break
+        if g is None or g.isEmpty():
+            return
+        try:
+            adm = json.loads(proj.readEntry("rs_lab", "aoi_admin", "{}")[0] or "{}")
+        except ValueError:
+            adm = {}
+        if adm:
+            self.session["aoi_admin"] = adm
+        self._set_aoi_geom(g, QgsCoordinateReferenceSystem("EPSG:4326"), label or tr("AOI"),
+                           keep_admin=True, add_layer=False)
+        self.msg(tr("AOI restored from the project: %s") % (label or tr("AOI")), "ok")
 
     def apply_aoi_crs(self):
         """Download CRS 'Auto' shows the AOI's UTM zone; optionally switch the project CRS to it."""
@@ -1117,22 +1187,51 @@ class Panel(QWidget):
         km = ", ".join([d[2] for d in reversed(chain) if d[2]] + ([] if chain or not ckm else [ckm]))
         self.session["aoi_admin"] = dict(level=level, en=en, km=km, codes=[d[0] for d in chain])
         lab = km if (language() == "km" and km) else en
-        self._set_aoi_geom(g, QgsCoordinateReferenceSystem("EPSG:4326"), lab)
+        self._set_aoi_geom(g, QgsCoordinateReferenceSystem("EPSG:4326"), lab, keep_admin=True)
         self.zoom_aoi()
 
-    def add_aoi_layer(self):
+    def add_aoi_layer(self, quiet=False):
+        """The AOI as a GeoPackage layer in the Layers panel (replaces the previous AOI layer)."""
         if self.aoi_geom is None:
-            self.msg(tr("Set an AOI first."), "warn")
+            if not quiet:
+                self.msg(tr("Set an AOI first."), "warn")
             return
-        from qgis.core import QgsFeature
-        vl = QgsVectorLayer("Polygon?crs=EPSG:4326&field=name:string(254)&field=name_km:string(254)",
-                            self.name("AOI"), "memory")
-        f = QgsFeature(vl.fields())
-        f.setGeometry(self.aoi_geom)
+        from osgeo import ogr, osr
+        proj = QgsProject.instance()
+        for lyr in list(proj.mapLayers().values()):
+            if lyr.customProperty("rslab_aoi") or lyr.customProperty("rslab_key") == "AOI":
+                proj.removeMapLayer(lyr.id())
         adm = self.session.get("aoi_admin") or {}
-        f.setAttributes([adm.get("en") or self.session.get("aoi_label", ""), adm.get("km", "")])
-        vl.dataProvider().addFeatures([f])
-        vl.updateExtents()
+        label = adm.get("en") or self.session.get("aoi_label", "") or "AOI"
+        slug = re.sub(r"[^A-Za-z0-9]+", "_", label).strip("_")[:40] or "aoi"
+        os.makedirs(self.out_dir(), exist_ok=True)
+        path = os.path.join(self.out_dir(), "aoi_%s.gpkg" % slug)
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+            except OSError:
+                import time
+                path = os.path.join(self.out_dir(), "aoi_%s_%s.gpkg" % (slug, time.strftime("%H%M%S")))
+        ds = ogr.GetDriverByName("GPKG").CreateDataSource(path)
+        srs = osr.SpatialReference()
+        srs.ImportFromEPSG(4326)
+        srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+        ol = ds.CreateLayer("aoi", srs, ogr.wkbMultiPolygon)
+        for fld in ("name", "name_km"):
+            ol.CreateField(ogr.FieldDefn(fld, ogr.OFTString))
+        ol.CreateField(ogr.FieldDefn("area_km2", ogr.OFTReal))
+        f = ogr.Feature(ol.GetLayerDefn())
+        f.SetField("name", adm.get("en") or self.session.get("aoi_label", ""))
+        f.SetField("name_km", adm.get("km", ""))
+        f.SetField("area_km2", float(self.session.get("aoi_km2") or 0))
+        geo = ogr.CreateGeometryFromWkt(self.aoi_geom.asWkt(7))
+        f.SetGeometry(ogr.ForceToMultiPolygon(geo))
+        ol.CreateFeature(f)
+        ds = None
+        vl = QgsVectorLayer(path + "|layername=aoi", self.name("AOI") + " — " + self.session.get("aoi_label", ""), "ogr")
+        if not vl.isValid():
+            self.msg(tr("Could not create the AOI layer."), "warn")
+            return
         sym = QgsSymbol.defaultSymbol(vl.geometryType())
         sym.setColor(QColor(0, 0, 0, 0))
         try:
@@ -1142,15 +1241,19 @@ class Panel(QWidget):
             LOG.debug("ignored error", exc_info=True)
         from qgis.core import QgsSingleSymbolRenderer
         vl.setRenderer(QgsSingleSymbolRenderer(sym))
-        QgsProject.instance().addMapLayer(vl)
-        self.tag(vl, "AOI")
+        vl.setCustomProperty("rslab_aoi", "1")
+        proj.addMapLayer(vl)
+        self.tag(vl, "AOI", " — " + self.session.get("aoi_label", ""))
+        if not quiet:
+            self.msg(tr("Saved %s") % path, "ok")
 
     # --- source switching
     SOURCE_NOTES = {
         "earth_search": "Free, no login. Sentinel-2 L2A Cloud-Optimised GeoTIFFs on AWS. Only the AOI pixels are "
                         "read; clouds masked with the SCL band; composite computed on your computer.",
-        "planetary_computer": "Free, no login. Sentinel-2 L2A, Landsat 5/7/8/9 Level-2 and Sentinel-1 RTC "
-                              "(terrain-corrected, dB). Clouds masked with SCL / QA_PIXEL; composite on your computer.",
+        "planetary_computer": "Free, no login. Sentinel-2 L2A, Landsat 5/7/8/9 Level-2, Landsat 1–5 MSS Level-1 "
+                              "(1972–2013) and Sentinel-1 RTC (terrain-corrected, dB). Clouds masked with SCL / "
+                              "QA_PIXEL; composite on your computer.",
         "local": "No internet needed. Use band files you downloaded yourself (USGS EarthExplorer, Copernicus "
                  "Browser, a SAFE folder…). They are stacked into one image with band roles.",
     }
