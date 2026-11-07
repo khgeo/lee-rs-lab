@@ -23,6 +23,7 @@ import tempfile
 import time
 import warnings
 
+import logging
 import numpy as np
 from osgeo import gdal, osr
 
@@ -31,6 +32,9 @@ from . import rs_core as R
 from . import stac_engine as se
 
 gdal.UseExceptions()
+
+LOG = logging.getLogger(__name__)
+
 
 # ====================================================================== datasets (all free, no login)
 S2_ROLES = {b: r for b, r, _, _ in catalog.SENSORS["S2_SR"]["bands"]}
@@ -116,6 +120,7 @@ class _Ctx:
         self.out_dir = out_dir or tempfile.gettempdir()
         self.log = log or (lambda *a: None)
         self.scale, self.epsg, self.max_pixels = None, None, 40e6
+        self.clip = True
         self.layers, self.charts, self.tables = [], [], []
         self.tmp = tempfile.mkdtemp(prefix="lee_")
         self.n = 0
@@ -131,8 +136,11 @@ class _Ctx:
 CTX = _Ctx()
 
 
-def config(scale=None, epsg=None, max_pixels=None, workers=None):
-    """lee.config(scale=30) — pixel size (m) for everything that follows; epsg to force a CRS."""
+def config(scale=None, epsg=None, max_pixels=None, workers=None, clip=None):
+    """lee.config(scale=30) — pixel size (m) for everything that follows; epsg to force a CRS;
+    clip=False keeps the whole rectangle around the AOI (default: layers and statistics are cut to the AOI)."""
+    if clip is not None:
+        CTX.clip = bool(clip)
     if scale:
         CTX.scale = float(scale)
     if epsg:
@@ -424,9 +432,26 @@ class Image:
                 out[n] = float(fns[reducer](v)) if v.size else float("nan")
         return out
 
+    def _aoi_mask(self):
+        g = self.grid
+        m = getattr(g, "_lee_aoi_mask", None)
+        if m is None or m.shape != self.data.shape[1:]:
+            try:
+                m = g.aoi_mask()
+            except Exception:  # noqa: BLE001
+                LOG.debug("no AOI mask", exc_info=True)
+                m = np.ones(self.data.shape[1:], bool)
+            g._lee_aoi_mask = m
+        return m
+
+    def clip(self, geometry=None):
+        """Pixels outside the AOI (or `geometry`, EPSG:4326) become masked — like ee.Image.clip()."""
+        m = self._region_mask(geometry) if geometry is not None else self._aoi_mask()
+        return Image(np.where(m[None], self.data, np.nan), self.names, self.grid, self.props, self.roles, self.legend)
+
     def _region_mask(self, geometry=None):
         if geometry is None:
-            return np.ones(self.data.shape[1:], bool)
+            return self._aoi_mask() if CTX.clip else np.ones(self.data.shape[1:], bool)
         g = se.Grid.__new__(se.Grid)
         g.__dict__.update(self.grid.__dict__)
         from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsGeometry, QgsProject)
@@ -440,7 +465,7 @@ class Image:
     def classAreas(self, band=0):
         """{class value: hectares} — for land-cover maps or classified images."""
         a = self.data[self._idx(band)]
-        v = a[np.isfinite(a)].astype("int64")
+        v = a[np.isfinite(a) & self._region_mask()].astype("int64")
         vals, cnt = np.unique(v, return_counts=True)
         px = self.grid.scale ** 2 / 1e4
         names = {k: n for k, n, _ in (self.legend or [])}
@@ -835,11 +860,18 @@ class Map:
         vis = dict(vis or {})
         if "bands" in vis:
             img = img.select(vis["bands"])
+        if vis.pop("clip", CTX.clip):
+            img = img.clip()
+        legend = img.legend
+        if legend:                                   # legend: only the classes found inside the AOI
+            v = img.data[0][np.isfinite(img.data[0])]
+            present = set(np.unique(v).astype("int64").tolist()) if v.size else set()
+            legend = [c for c in legend if int(c[0]) in present] or legend
         name = name or "_".join(img.names)
         safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)[:50]
         path = img.save(os.path.join(CTX.out_dir, "lee_%s_%s.tif" % (safe, time.strftime("%H%M%S"))))
-        kind = "rgb" if len(img.names) >= 3 else ("class" if img.legend else "single")
-        CTX.layers.append(dict(path=path, name=name, vis=vis, kind=kind, legend=img.legend))
+        kind = "rgb" if len(img.names) >= 3 else ("class" if legend else "single")
+        CTX.layers.append(dict(path=path, name=name, vis=vis, kind=kind, legend=legend))
         CTX.log("Map: added '%s' → %s" % (name, path))
         return path
 

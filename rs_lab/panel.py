@@ -1481,6 +1481,11 @@ class Panel(QWidget):
         f.addRow(tr("Clip low / high %"), row(self.plo, self.phi))
         f.addRow(tr("Std. dev. (n) / gamma"), row(self.nstd, self.gamma))
         lay.addLayout(f)
+        self.c_auto = QCheckBox(tr("Apply automatically when a setting changes"))
+        self.c_auto.setObjectName("c_auto")
+        self.c_auto.setChecked(QgsSettings().value("rs_lab/auto_apply", True, type=bool))
+        self.c_auto.toggled.connect(lambda v: QgsSettings().setValue("rs_lab/auto_apply", bool(v)))
+        lay.addWidget(self.c_auto)
         lay.addLayout(row(btn(tr("Apply to layer"), self.apply_composite, primary=True),
                           btn(tr("Save enhanced RGB"), self.save_enhanced)))
         lay.addLayout(row(btn(tr("Histogram"), self.show_hist), btn(tr("Band statistics"), self.show_stats),
@@ -1489,9 +1494,38 @@ class Panel(QWidget):
         lay.addWidget(self.c_stats)
         self.c_raster.layerChanged.connect(self.on_c_raster)
         self.preset.currentIndexChanged.connect(self.on_preset)
+        # auto-apply: any change of combination, channel or stretch restyles the layer after a short pause
+        from qgis.PyQt.QtCore import QTimer
+        self._c_timer = QTimer(self)
+        self._c_timer.setSingleShot(True)
+        self._c_timer.setInterval(350)
+        self._c_timer.timeout.connect(self._auto_composite)
+        self._c_loading = False
+        for w in (self.preset, self.cr, self.cg, self.cbb, self.stretch):
+            w.currentIndexChanged.connect(self._queue_composite)
+        for w in (self.plo, self.phi, self.nstd, self.gamma):
+            w.valueChanged.connect(self._queue_composite)
         self.on_c_raster(self.c_raster.currentLayer())
 
+    def _queue_composite(self, *_):
+        if self.c_auto.isChecked() and not self._c_loading:
+            self._c_timer.start()
+
+    def _auto_composite(self):
+        if self.c_auto.isChecked() and self.stretch.currentData() != "histeq" and self.c_raster.currentLayer():
+            self.apply_composite()
+
     def on_c_raster(self, lyr):
+        # choosing another image only fills the boxes; it never restyles that image by itself
+        self._c_loading = True
+        try:
+            self._on_c_raster(lyr)
+        finally:
+            self._c_loading = False
+            if hasattr(self, "_c_timer"):
+                self._c_timer.stop()
+
+    def _on_c_raster(self, lyr):
         info = self.fill_bands(lyr, [self.cr, self.cg, self.cbb])
         self.preset.blockSignals(True)
         self.preset.clear()
