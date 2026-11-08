@@ -8,12 +8,15 @@ Only the pixels inside the AOI are read (GDAL /vsicurl/ range requests), each sc
 (Sentinel-2 SCL, Landsat QA_PIXEL), then a composite is computed locally with NumPy in row blocks.
 The result carries band names, roles and scale metadata, so every tab works the same for any source.
 """
+import calendar
 import json
 from .compat import web_url
 import math
 import os
+import re
 import shutil
 import tempfile
+import threading
 import time
 import urllib.request
 import warnings
@@ -100,22 +103,64 @@ def _http_json(url, body=None, timeout=90, tries=4):
 
 # ------------------------------------------------------------------ Planetary Computer signing
 _tokens = {}
+_tok_lock = threading.Lock()
+_BLOB_RE = re.compile(r"^https://([a-z0-9]+)\.blob\.core\.windows\.net/([^/?]+)/")
 
 
-def _pc_token(coll):
-    t = _tokens.get(coll)
-    if t and t[1] > time.time() + 300:
-        return t[0]
-    js = _http_json(_cfg()["planetary_computer"]["token"] + coll)
+def _token_key(coll, href=None):
+    """Planetary Computer SAS tokens are scoped to a storage account + container. Signing by the
+    asset's own account/container (like the official planetary_computer.sign) is the reliable way:
+    a token asked for by collection name can be for a different container (e.g. MODIS) -> HTTP 403."""
+    m = _BLOB_RE.match(href or "")
+    return "%s/%s" % (m.group(1), m.group(2)) if m else coll
+
+
+def _pc_token(coll, href=None, refresh=False):
+    key = _token_key(coll, href)
+    with _tok_lock:
+        t = _tokens.get(key)
+        if t and not refresh and t[1] > time.time() + 300:
+            return t[0]
+    base = _cfg()["planetary_computer"]["token"]
+    try:
+        js = _http_json(base + key, tries=3)
+    except IOError:
+        if key == coll or not coll:
+            raise
+        js = _http_json(base + coll, tries=3)        # fall back to the collection-scoped token
     tok = js["token"]
-    _tokens[coll] = (tok, time.time() + 45 * 60)
+    exp = time.time() + 45 * 60
+    try:  # use the server's expiry when given ("msft:expiry": "2026-11-08T03:12:00Z")
+        exp = min(exp, calendar.timegm(time.strptime(js["msft:expiry"][:19], "%Y-%m-%dT%H:%M:%S")))
+    except Exception:  # noqa: BLE001
+        pass
+    with _tok_lock:
+        _tokens[key] = (tok, exp)
     return tok
 
 
-def _signed(source, coll, href):
-    if source != "planetary_computer":
+def _is_pc_signed(href):
+    return "blob.core.windows.net" in href and "sig=" in href
+
+
+def _signed(source, coll, href, refresh=False):
+    if source != "planetary_computer" or not href.startswith("http"):
         return href
-    return href + ("&" if "?" in href else "?") + _pc_token(coll)
+    if _is_pc_signed(href):
+        if not refresh:
+            return href
+        href = href.split("?", 1)[0]
+    return href + ("&" if "?" in href else "?") + _pc_token(coll, href, refresh)
+
+
+def _resign(href):
+    """Strip an expired/rejected SAS token and sign again with a fresh one."""
+    base = href.split("?", 1)[0]
+    if hasattr(gdal, "VSICurlPartialClearCache"):
+        gdal.VSICurlPartialClearCache("/vsicurl/" + base)
+    elif hasattr(gdal, "VSICurlClearCache"):
+        gdal.VSICurlClearCache()
+    return base + "?" + _pc_token(None, base, refresh=True)
 
 
 # ------------------------------------------------------------------ search
@@ -247,6 +292,17 @@ class Grid:
 
 
 def _read(href, grid, resample="near", src_nodata=None, out_type=None):
+    """Read one band onto the AOI grid; on HTTP 401/403 from Planetary Computer, re-sign once and retry."""
+    try:
+        return _read_once(href, grid, resample, src_nodata, out_type)
+    except RuntimeError as e:
+        msg = str(e)
+        if not (_is_pc_signed(href) and ("403" in msg or "401" in msg)):
+            raise
+    return _read_once(_resign(href), grid, resample, src_nodata, out_type)
+
+
+def _read_once(href, grid, resample="near", src_nodata=None, out_type=None):
     """Read one band onto the AOI grid.
 
     Fast path: when the image is already in the grid's CRS (the normal case: Sentinel-2 / Landsat tiles

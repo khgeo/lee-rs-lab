@@ -723,6 +723,12 @@ class ImageCollection:
         CTX.log("  %d image(s) read in %.0f s (%d px × %d px @ %g m)" % (len(out), time.time() - t0, grid.W, grid.H,
                                                                          grid.scale))
         if not out:
+            errs = [str(r) for r in got if isinstance(r, Exception)]
+            if errs and all(("403" in e or "401" in e) for e in errs):
+                raise ValueError("%s: the data server refused access (HTTP 403) for every image. The download "
+                                 "token was rejected - check that planetarycomputer.microsoft.com and "
+                                 "*.blob.core.windows.net are not blocked by a firewall/proxy, then try again."
+                                 % self.key)
             raise ValueError("%s: nothing could be read (all cloudy or no internet)." % self.key)
         return grid, bands, out
 

@@ -7,7 +7,7 @@
     - **សៀវភៅជា PDF (បោះពុម្ព ឬអានគ្មានអ៊ីនធឺណិត)៖** [lee-rs-lab-manual-km.pdf](downloads/lee-rs-lab-manual-km.pdf)
     - **កូដប្រភព៖** [github.com/khgeo/lee-rs-lab](https://github.com/khgeo/lee-rs-lab)
 
-YAM Sarath (យាំ សារដ្ឋ) · LEE RS Lab 2.2.0 · QGIS 3.22–3.44
+YAM Sarath (យាំ សារដ្ឋ) · LEE RS Lab 2.3.0 · QGIS 3.22–3.44
 
 ## សេចក្ដីផ្ដើម
 

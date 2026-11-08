@@ -22,6 +22,7 @@ from qgis.PyQt.QtWidgets import (QAbstractButton, QAbstractItemView, QCheckBox, 
 
 from . import aoi as aoimod
 from . import catalog, deps, plots, procs, report, tasks
+from . import season_clusters as sc
 from . import raster_io as rio
 from .compat import (EA, web_url, CHECKABLE, CHECKED, EDITABLE, NO_EDIT, RESIZE_CONTENTS, SCROLL_OFF, SELECT_ROWS,
                      UNCHECKED, USER_ROLE, YES, NO, E, Qt, field_filter_numeric, layer_filter,
@@ -1982,6 +1983,35 @@ class Panel(QWidget):
     # ============================================================ 5 UNSUPERVISED
     def build_unsup(self, P):
         lay = P.section("unsup", tr("Unsupervised (K-means, ISODATA)"), "unsupervised").lay
+        # ---- multi-season feature stack, built locally with LEE (no login)
+        ms = QLabel("<b>%s</b><br><small>%s</small>" % (
+            tr("Multi-season stack (local, no login)"),
+            tr("Sentinel-2 dry season (Feb–Apr) and green season (Sep–Nov) plus Sentinel-1 for the AOI of "
+               "tab 1: separates evergreen from deciduous trees, paddy from upland crops, permanent from "
+               "seasonal water, and built-up areas.")))
+        ms.setWordWrap(True)
+        lay.addWidget(ms)
+        fm = QFormLayout()
+        self.ms_year, self.ms_scenes, self.ms_scale = QSpinBox(), QSpinBox(), QSpinBox()
+        for w, n, lo, hi, v in ((self.ms_year, "ms_year", 2017, 2035, QDate.currentDate().year() - 1),
+                                (self.ms_scenes, "ms_scenes", 2, 20, 8), (self.ms_scale, "ms_scale", 0, 500, 0)):
+            w.setObjectName(n)
+            w.setRange(lo, hi)
+            w.setValue(v)
+        self.ms_scale.setSingleStep(10)
+        self.ms_scale.setSpecialValueText(tr("auto"))
+        self.ms_scale.setSuffix(" m")
+        self.ms_s1 = QCheckBox(tr("Include Sentinel-1 radar"))
+        self.ms_s1.setObjectName("ms_s1")
+        self.ms_s1.setChecked(True)
+        fm.addRow(tr("Year"), self.ms_year)
+        fm.addRow(tr("Images per season (max)"), self.ms_scenes)
+        fm.addRow(tr("Pixel size"), self.ms_scale)
+        fm.addRow("", self.ms_s1)
+        lay.addLayout(fm)
+        lay.addLayout(row(btn(tr("Build multi-season stack"), self.build_season_stack,
+                              tr("Downloads only the AOI and computes the stack on your computer. A province "
+                                 "takes several minutes; a district or commune is much faster.")), "stretch"))
         f = QFormLayout()
         self.u_form = f
         self.u_raster = raster_combo()
@@ -2021,13 +2051,22 @@ class Panel(QWidget):
         self.u_help = QLabel("<small>%s</small>" % tr(
             "Label the clusters: choose a class for each cluster — clusters with the same class are merged."))
         self.u_help.setWordWrap(True)
-        self.u_table = table([tr("Cluster"), tr("Area (ha)"), "%", tr("→ class"), tr("Mean spectrum")], 120,
-                             editable=False, hidden=True)
+        self.u_table = table([tr("Cluster"), tr("Area (ha)"), "%", tr("Hint"), tr("→ class"), tr("Mean spectrum")],
+                             240, editable=False, hidden=True)
+        self.u_table.cellClicked.connect(self.cluster_example)
         self.u_after = QWidget()
         ua = QVBoxLayout(self.u_after)
         ua.setContentsMargins(0, 0, 0, 0)
         ua.addWidget(self.u_help)
         ua.addWidget(self.u_table)
+        self.u_split_n = QSpinBox()
+        self.u_split_n.setObjectName("u_split_n")
+        self.u_split_n.setRange(2, 6)
+        self.u_split_n.setValue(3)
+        ua.addLayout(row(btn(tr("Suggest classes from hints"), self.suggest_clusters,
+                             tr("Fills the empty → class boxes from the hints. Check them on the basemap.")),
+                         btn(tr("Split selected cluster into"), self.split_selected_cluster,
+                             tr("Re-clusters a mixed cluster into 2–6 sub-clusters.")), self.u_split_n))
         ua.addLayout(row(btn("🎨 " + tr("Classes (legend)") + "…", lambda: self.go("classes")),
                          btn(tr("Plot cluster spectra"), self.plot_clusters),
                          btn(tr("Create labelled map"), self.recode_clusters, primary=True)))
@@ -2061,6 +2100,8 @@ class Panel(QWidget):
                 self.msg(err or tr("cancelled"), "err")
                 return
             res["method"] = "K-means" if m == "kmeans" else "ISODATA"
+            res["image"], res["band_idx"] = layer_path(lyr), list(bands)
+            res["ids"] = list(range(1, res["k"] + 1))
             self.session["unsupervised"] = res
             self.render_unsup()
             self.style_clusters()
@@ -2074,9 +2115,17 @@ class Panel(QWidget):
         res = self.session.get("unsupervised")
         if not res:
             return
-        cls = [(i + 1, "%s %s", rio.PALETTE[i % len(rio.PALETTE)], ["Cluster", str(i + 1)]) for i in range(res["k"])]
+        cls = [(i, "%s %s", self._ucol(i), ["Cluster", str(i)]) for i in self._uids(res)]
         l2 = rio.add_class_layer(res["path"], self.name("Clusters", " (%s)" % res["method"]), cls, tr(GROUP))
         self.tag(l2, "Clusters", " (%s)" % res["method"])
+
+    @staticmethod
+    def _uids(res):
+        return list(res.get("ids") or range(1, len(res["centres"]) + 1))
+
+    @staticmethod
+    def _ucol(cid):
+        return rio.PALETTE[(int(cid) - 1) % len(rio.PALETTE)]
 
     def render_unsup(self):
         res = self.session.get("unsupervised")
@@ -2086,41 +2135,186 @@ class Panel(QWidget):
         self.u_after.setVisible(True)
         self.u_table.setVisible(True)
         self.u_table.setRowCount(0)
-        for i, c in enumerate(res["centres"]):
+        ids = self._uids(res)
+        res["hints"] = {}
+        for i, (cid, c) in enumerate(zip(ids, res["centres"])):
             r = self.u_table.rowCount()
             self.u_table.insertRow(r)
-            a, p = area.get(i + 1, (0.0, 0.0))
-            vals = ["%d" % (i + 1), "%.1f" % a, "%.1f" % p, "", ", ".join("%.3g" % v for v in c)]
+            a, p = area.get(cid, (0.0, 0.0))
+            h = sc.hint(res["bands"], c)
+            res["hints"][str(cid)] = h
+            vals = ["%d" % cid, "%.1f" % a, "%.1f" % p, tr(sc.HINT_TEXT.get(h, "")), "",
+                    ", ".join("%.3g" % v for v in c)]
             for j, v in enumerate(vals):
                 it = QTableWidgetItem(v)
-                it.setBackground(QColor(rio.PALETTE[i % len(rio.PALETTE)]) if j == 0 else it.background())
+                if j == 0:
+                    it.setBackground(QColor(self._ucol(cid)))
+                if j == 3:
+                    it.setToolTip("\n".join("%s: %.3g" % (sc._name(d), x) for d, x in zip(res["bands"], c)))
                 self.u_table.setItem(r, j, it)
             cb = QComboBox()
             cb.addItem("—", None)
-            for cid, n, col in self.classes():
-                cb.addItem("%d  %s" % (cid, tr(n)), cid)
+            for k, n, col in self.classes():
+                cb.addItem("%d  %s" % (k, tr(n)), k)
                 cb.setItemData(cb.count() - 1, QColor(col), E(Qt, "ItemDataRole.DecorationRole"))
-            want = res.get("recode", {}).get(str(i + 1))
+            want = res.get("recode", {}).get(str(cid))
             if want is not None and cb.findData(want) >= 0:
                 cb.setCurrentIndex(cb.findData(want))
             cb.currentIndexChanged.connect(lambda *_: self._save_recode())
-            self.u_table.setCellWidget(r, 3, cb)
+            self.u_table.setCellWidget(r, 4, cb)
+        self.u_table.setColumnWidth(3, 200)
+
+    def suggest_clusters(self):
+        res = self.session.get("unsupervised")
+        if not res:
+            return
+        n = 0
+        for r, cid in enumerate(self._uids(res)):
+            cb = self.u_table.cellWidget(r, 4)
+            if cb is None or cb.currentData() is not None:
+                continue
+            k = sc.suggest_class(res.get("hints", {}).get(str(cid), "none"), self.classes())
+            if k is not None and cb.findData(k) >= 0:
+                cb.setCurrentIndex(cb.findData(k))
+                n += 1
+        self.msg(tr("%d clusters filled from hints — check them on the basemap.") % n, "ok")
+
+    def cluster_example(self, row, col):
+        """Click a cluster row → zoom to a random pixel of it (next click → another one)."""
+        res = self.session.get("unsupervised")
+        if not res or col == 4:
+            return
+        ids = self._uids(res)
+        if row >= len(ids):
+            return
+        cid = ids[row]
+        cache = res.setdefault("_examples", {})
+        lst = cache.get(cid)
+        if not lst:
+            pts, wkt = sc.examples(res["path"], cid, 10)
+            if not pts:
+                self.msg(tr("No pixels in this cluster."), "warn")
+                return
+            lst = cache[cid] = dict(pts=pts, wkt=wkt, i=0)
+        x, y = lst["pts"][lst["i"] % len(lst["pts"])]
+        k = lst["i"] % len(lst["pts"]) + 1
+        lst["i"] += 1
+        from qgis.core import QgsPointXY, QgsRectangle
+        from .basemaps import add_basemap
+        add_basemap("esri_imagery")
+        src = QgsCoordinateReferenceSystem.fromWkt(lst["wkt"])
+        canvas = self.iface.mapCanvas()
+        ct = QgsCoordinateTransform(src, canvas.mapSettings().destinationCrs(), QgsProject.instance())
+        d = 350.0 if not src.isGeographic() else 0.0035
+        canvas.setExtent(ct.transformBoundingBox(QgsRectangle(x - d, y - d, x + d, y + d)))
+        canvas.refresh()
+        g = QgsGeometry.fromPointXY(QgsPointXY(x, y)).buffer(d / 14.0, 12)
+        try:
+            from qgis.PyQt.QtCore import QTimer
+            QTimer.singleShot(600, lambda: canvas.flashGeometries([g], src))
+        except Exception:  # noqa: BLE001
+            LOG.debug("ignored error", exc_info=True)
+        self.msg(tr("Cluster %d: example %d of %d") % (cid, k, len(lst["pts"])))
+
+    def split_selected_cluster(self):
+        res = self.session.get("unsupervised")
+        if not res:
+            return
+        row = self.u_table.currentRow()
+        ids = self._uids(res)
+        if row < 0 or row >= len(ids):
+            self.msg(tr("Select a cluster row first."), "warn")
+            return
+        if not res.get("image") or not os.path.exists(res["image"]):
+            self.msg(tr("Run the clustering again (the image of this result is not known)."), "warn")
+            return
+        cid, n = ids[row], self.u_split_n.value()
+        next_id = max(ids) + 1
+        if next_id + n > 250:
+            self.msg(tr("Too many clusters."), "warn")
+            return
+        keep = dict(res.get("recode", {}))
+        keep.pop(str(cid), None)
+
+        def done(ok, out, err):
+            if not ok or not out:
+                self.msg(err or tr("cancelled"), "err")
+                return
+            j = ids.index(cid)
+            res["ids"] = ids[:j] + out["new_ids"] + ids[j + 1:]
+            res["centres"] = res["centres"][:j] + out["centres"] + res["centres"][j + 1:]
+            res["k"] = len(res["ids"])
+            res["path"], res["areas"] = out["path"], out["areas"]
+            res["recode"] = keep
+            res.pop("_examples", None)
+            self.render_unsup()
+            self.style_clusters()
+            self.msg(tr("Cluster %d split into %d.") % (cid, len(out["new_ids"])), "ok")
+        self._task(tr("Split cluster"), sc.split_cluster,
+                   (res["path"], res["image"], res["band_idx"], cid, n, next_id, self.out_dir()),
+                   on_done=done)
+
+    def build_season_stack(self):
+        g = self.session.get("aoi_geom")
+        if g is None:
+            self.msg(tr("Set the area of interest first (tab 1)."), "warn")
+            self.go("aoi")
+            return
+        g = QgsGeometry(g)                           # a copy for the worker thread
+        year = self.ms_year.value()
+        lines = []
+
+        def done(ok, res, err):
+            if not ok or not res:
+                self.msg(err or tr("cancelled"), "err")
+                return
+            from qgis.core import QgsRasterLayer
+            lyr = QgsRasterLayer(res["path"], self.name("Multi-season stack", " %d" % year))
+            if not lyr.isValid():
+                self.msg(tr("Could not open %s") % res["path"], "err")
+                return
+            try:                                     # seasonal false colour: green-season, dry-season NDVI, water
+                ren = QgsMultiBandColorRenderer(lyr.dataProvider(), 2, 1, 7)
+                for setter, lo, hi in ((ren.setRedContrastEnhancement, 0.0, 0.9),
+                                       (ren.setGreenContrastEnhancement, 0.0, 0.9),
+                                       (ren.setBlueContrastEnhancement, -0.6, 0.4)):
+                    ce = QgsContrastEnhancement(lyr.dataProvider().dataType(1))
+                    ce.setContrastEnhancementAlgorithm(E(QgsContrastEnhancement, "ContrastEnhancementAlgorithm.StretchToMinimumMaximum"))
+                    ce.setMinimumValue(lo)
+                    ce.setMaximumValue(hi)
+                    setter(ce)
+                lyr.setRenderer(ren)
+            except Exception:  # noqa: BLE001
+                LOG.debug("ignored error", exc_info=True)
+            QgsProject.instance().addMapLayer(lyr)
+            self.tag(lyr, "Multi-season stack", " %d" % year)
+            self.u_raster.setLayer(lyr)
+            self.fill_band_list(lyr, self.u_bands, prefer=list(range(1, lyr.bandCount() + 1)))
+            if self.u_k.value() < 12:
+                self.u_k.setValue(15)
+            self.msg(tr("Stack ready: %d bands, %g m pixels, %.0f%% of pixels complete. Now run clustering.")
+                     % (len(res["bands"]), res["scale"], res["valid_pct"]), "ok")
+        self._task(tr("Multi-season stack"), sc.build_season_stack,
+                   (g, year, self.ms_scale.value() or None, self.out_dir(), self.ms_scenes.value(),
+                    self.ms_s1.isChecked(), self.par.value(), lines.append),
+                   on_done=done)
 
     def plot_clusters(self):
         res = self.session.get("unsupervised")
         if not res:
             return
-        series = [("%s %d" % ("Cluster", i + 1), c, rio.PALETTE[i % len(rio.PALETTE)], None)
-                  for i, c in enumerate(res["centres"])]
+        series = [("%s %d" % ("Cluster", cid), c, self._ucol(cid), None)
+                  for cid, c in zip(self._uids(res), res["centres"])]
         plots.plot_signatures(tr("Cluster mean spectra"), res["bands"], series, self)
 
     def _save_recode(self):
         res = self.session.get("unsupervised")
         mapping = {}
-        for r in range(self.u_table.rowCount()):
-            cb = self.u_table.cellWidget(r, 3)
+        ids = self._uids(res) if res else []
+        for r in range(min(self.u_table.rowCount(), len(ids))):
+            cb = self.u_table.cellWidget(r, 4)
             if cb is not None and cb.currentData() is not None:
-                mapping[r + 1] = int(cb.currentData())
+                mapping[ids[r]] = int(cb.currentData())
         if res is not None:
             res["recode"] = {str(k): v for k, v in mapping.items()}
         return mapping

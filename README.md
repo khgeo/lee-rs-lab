@@ -9,7 +9,8 @@
 
 LEE (*Local Earth Engine*) RS Lab downloads free imagery (Sentinel-2, Landsat 5–9, Sentinel-1, MODIS, DEM,
 land cover, surface water) from Microsoft Planetary Computer and Earth Search, and runs the whole remote sensing
-workflow on your own computer: composites, band combinations, indices, filters, PCA, unsupervised and supervised
+workflow on your own computer: composites, band combinations, indices, filters, PCA, unsupervised classification (with a multi-season
+Sentinel-2 + Sentinel-1 stack, cluster hints, example pixels and cluster splitting) and supervised
 classification, accuracy assessment (Cochran sampling, Olofsson area-adjusted estimates), from → to change detection
 with a Sankey diagram, map layout, a PDF report, and Earth-Engine-style scripts (32 examples).
 
@@ -62,3 +63,10 @@ Release a new version: raise `version=` in `rs_lab/metadata.txt` and push to `ma
 YAM Sarath (យាំ សារដ្ឋ) · Part of the [khgeo](https://khgeo.github.io/) book series.
 Plugin code: GPL-2.0-or-later. Manual text and figures: CC BY-SA 4.0. Khmer fonts (Battambang, Siemreap, Moul) by
 Danh Hong, SIL Open Font License.
+
+## Rebuild the PDF manual
+
+```bash
+pip install -r requirements.txt playwright pypdf pyyaml && playwright install chromium
+python tools/build_pdf.py        # → docs/downloads/lee-rs-lab-manual-km.pdf (cover from tools/cover.pdf)
+```
