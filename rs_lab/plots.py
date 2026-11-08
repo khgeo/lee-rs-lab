@@ -257,8 +257,8 @@ def plot_signatures(title, band_labels, series, parent=None):
         ax2.set_title("Radar", fontsize=9, loc="left")
         ax.set_title(title, fontsize=11, loc="left")
         ax.set_xlabel("Band")
-        h, l = ax.get_legend_handles_labels()
-        ax2.legend(h, l, fontsize=7, loc="center left", bbox_to_anchor=(1.02, 0.5), borderaxespad=0)
+        handles, labels = ax.get_legend_handles_labels()
+        ax2.legend(handles, labels, fontsize=7, loc="center left", bbox_to_anchor=(1.02, 0.5), borderaxespad=0)
         dlg.fig.subplots_adjust(left=0.08, right=0.85, bottom=0.27, top=0.9, wspace=0.28)
         dlg.no_tight = True                  # tight_layout cannot handle the outside legend
     else:

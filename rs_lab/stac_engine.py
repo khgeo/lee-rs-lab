@@ -10,6 +10,7 @@ The result carries band names, roles and scale metadata, so every tab works the 
 """
 import calendar
 import json
+import logging
 from .compat import web_url
 import math
 import os
@@ -25,6 +26,8 @@ import numpy as np
 from osgeo import gdal, ogr, osr
 
 from . import catalog
+
+LOG = logging.getLogger(__name__)
 
 gdal.UseExceptions()
 
@@ -130,10 +133,12 @@ def _pc_token(coll, href=None, refresh=False):
         js = _http_json(base + coll, tries=3)        # fall back to the collection-scoped token
     tok = js["token"]
     exp = time.time() + 45 * 60
-    try:  # use the server's expiry when given ("msft:expiry": "2026-11-08T03:12:00Z")
-        exp = min(exp, calendar.timegm(time.strptime(js["msft:expiry"][:19], "%Y-%m-%dT%H:%M:%S")))
-    except Exception:  # noqa: BLE001
-        pass
+    srv = js.get("msft:expiry")              # use the server's expiry when given ("2026-11-08T03:12:00Z")
+    if isinstance(srv, str) and len(srv) >= 19:
+        try:
+            exp = min(exp, calendar.timegm(time.strptime(srv[:19], "%Y-%m-%dT%H:%M:%S")))
+        except ValueError:
+            LOG.debug("unreadable token expiry %r; using 45 min", srv)
     with _tok_lock:
         _tokens[key] = (tok, exp)
     return tok

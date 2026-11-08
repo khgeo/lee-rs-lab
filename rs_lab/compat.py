@@ -22,14 +22,22 @@ def E(owner, dotted):
         return getattr(owner, dotted.split(".")[-1])
 
 
+def _has_path(owner, dotted):
+    obj = owner
+    for part in dotted.split("."):
+        if not hasattr(obj, part):
+            return False
+        obj = getattr(obj, part)
+    return True
+
+
 def EA(*pairs):
     """First enum value that resolves among (owner, 'Enum.Member') pairs, e.g. the QGIS 4 name in Qgis first,
     then the QGIS 3 name. Each pair falls back to the short member name as E() does."""
     for owner, dotted in pairs:
-        try:
+        last = dotted.split(".")[-1]
+        if _has_path(owner, dotted) or hasattr(owner, last):
             return E(owner, dotted)
-        except AttributeError:
-            continue
     raise AttributeError(str(pairs))
 
 

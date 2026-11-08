@@ -2921,11 +2921,9 @@ class Panel(QWidget):
             return
         cnt = {}
         for f in vl.getFeatures():
-            try:
-                k = int(f["class_id"])
-            except (TypeError, ValueError, KeyError):
-                continue
-            cnt[k] = cnt.get(k, 0) + 1
+            v = f["class_id"]
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
+                cnt[int(v)] = cnt.get(int(v), 0) + 1
         names = {c[0]: tr(c[1]) for c in self.classes()}
         txt = ", ".join("%s %d" % (names.get(k, k), v) for k, v in sorted(cnt.items())) or "—"
         self.mw_info.setText("<small>%s (%s): %s</small>" % (tr("Polygons per class"), vl.name(), txt))
