@@ -96,7 +96,8 @@ local knowledge. Ask for more clusters than classes, then merge them by giving t
         "en": """<b>Supervised classification</b><ol>
 <li>Define classes (id, name, colour).</li>
 <li>Digitize <b>training polygons</b> over pure, typical areas of each class — spread them across the
-whole image, at least 10–20 polygons per class.</li>
+whole image, at least 10–20 polygons per class. Fastest: the <b>🪄 magic wand</b> — pick a class, press
+Start, click inside a field or a pond and similar connected pixels become one polygon.</li>
 <li>Check the <b>signatures</b> and <b>separability</b> (Jeffries–Matusita &gt; 1.9 = good; &lt; 1.0 = classes overlap).</li>
 <li>Choose a classifier: <i>Minimum Distance</i> (nearest class mean), <i>Parallelepiped</i> (box of ±k·σ),
 <i>Maximum Likelihood</i> (Gaussian probability, uses covariance), <i>Spectral Angle Mapper</i>
@@ -105,7 +106,8 @@ whole image, at least 10–20 polygons per class.</li>
         "km": """<b>ចំណាត់ថ្នាក់ដោយមានការណែនាំ</b><ol>
 <li>កំណត់ថ្នាក់ (លេខ ឈ្មោះ ពណ៌)។</li>
 <li>គូរ <b>ពហុកោណហ្វឹកហាត់</b> លើតំបន់សុទ្ធ និងតំណាងនៃថ្នាក់នីមួយៗ — ចែកចាយលើរូបភាពទាំងមូល
-យ៉ាងតិច 10–20 ពហុកោណក្នុងមួយថ្នាក់។</li>
+យ៉ាងតិច 10–20 ពហុកោណក្នុងមួយថ្នាក់។ លឿនបំផុត៖ <b>🪄 ដំបងវេទមន្ត</b> — ជ្រើសថ្នាក់ ចុច ចាប់ផ្ដើមចុច
+រួចចុចនៅខាងក្នុងស្រែ ឬស្រះ នោះភីកសែលស្រដៀងគ្នាដែលនៅជាប់គ្នាក្លាយជាពហុកោណមួយ។</li>
 <li>ពិនិត្យ <b>ហត្ថលេខាវិសាលគម</b> និង <b>ភាពបំបែកបាន</b> (Jeffries–Matusita &gt; 1.9 = ល្អ; &lt; 1.0 = ថ្នាក់ត្រួតគ្នា)។</li>
 <li>ជ្រើសវិធី៖ <i>Minimum Distance</i> (មធ្យមថ្នាក់ជិតបំផុត), <i>Parallelepiped</i> (ប្រអប់ ±k·σ),
 <i>Maximum Likelihood</i> (ប្រូបាប Gaussian ប្រើកូវ៉ារ្យង់), <i>Spectral Angle Mapper</i>

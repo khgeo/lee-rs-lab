@@ -14,6 +14,9 @@ Sentinel-2 + Sentinel-1 stack, cluster hints, example pixels and cluster splitti
 classification, accuracy assessment (Cochran sampling, Olofsson area-adjusted estimates), from → to change detection
 with a Sankey diagram, map layout, a PDF report, and Earth-Engine-style scripts (32 examples).
 
+A **Basic / Advanced** switch (2.4.0) keeps the panel short for beginners — Basic shows only the main steps, Advanced
+shows every tool — and the **🪄 magic wand** creates training polygons with one click (similar connected pixels).
+
 <img src="docs/assets/img/cover.jpg" alt="LEE RS Lab manual cover" width="360" align="right">
 
 ## 📖 Manual (Khmer, 15 lessons)
@@ -24,7 +27,7 @@ Read online: **https://khgeo.github.io/lee-rs-lab/** · PDF: [lee-rs-lab-manual-
 |---|---|
 | 1–4 | Area of interest · search scenes · composite & download · DEM and other datasets |
 | 5–7 | Band combinations & stretch · NDVI / MNDWI · filters & PCA |
-| 8–11 | K-means · training data · Random Forest and 6 other classifiers · accuracy |
+| 8–11 | K-means · training data (magic wand or drawing) · Random Forest and 6 other classifiers · accuracy |
 | 12–13 | Clean-up, polygons & map layout · from → to change 2020 → 2026 with Sankey |
 | 14–15 | LEE scripts (land surface temperature, Sentinel-1 rice calendar) · PDF report |
 

@@ -374,6 +374,13 @@ class Panel(QWidget):
         self.lang.addItem("ខ្មែរ (Khmer)", "km")
         self.lang.setCurrentIndex(1 if language() == "km" else 0)
         self.lang.currentIndexChanged.connect(self.on_lang)
+        self.mode = QComboBox()                   # Basic = the short path for beginners; Advanced = every tool
+        self.mode.setObjectName("_mode")
+        self.mode.addItem(tr("Basic"), "basic")
+        self.mode.addItem(tr("Advanced"), "advanced")
+        self.mode.setToolTip(tr("Basic shows only the main steps; Advanced shows every tool (filters, PCA, "
+                                "ISODATA, other algorithms, signatures, WorldCover training, polygons, LEE scripts)."))
+        self.mode.setCurrentIndex(1 if QgsSettings().value("rs_lab/mode", "basic", type=str) == "advanced" else 0)
         from . import basemaps as bmod
         from qgis.PyQt.QtGui import QIcon
         bmb = QToolButton()                       # basemaps live in the panel (no second toolbar icon)
@@ -391,7 +398,7 @@ class Panel(QWidget):
         repb.clicked.connect(self.export_report)
         top.addWidget(title)
         top.addStretch(1)
-        for w in (self.lang, bmb, helpb, repb):
+        for w in (self.mode, self.lang, bmb, helpb, repb):
             top.addWidget(w)
         root.addLayout(top)
         self.status = QLabel()
@@ -431,14 +438,67 @@ class Panel(QWidget):
         for k in ("aoi", "composite", "unsup", "change"):   # first step of each page starts open
             self.sec[k].open()
         self.compact()
+        self.mode.currentIndexChanged.connect(self.on_mode)
+        self.apply_mode()
         self.refresh_status()
+
+    def basic(self):
+        return self.mode.currentData() != "advanced"
+
+    def on_mode(self):
+        QgsSettings().setValue("rs_lab/mode", self.mode.currentData())
+        self.apply_mode()
+        self.msg(tr("Basic mode: only the main steps are shown.") if self.basic()
+                 else tr("Advanced mode: every tool is shown."), "ok")
+
+    def apply_mode(self):
+        """Hide the advanced tools in Basic mode (nothing is removed: switch to Advanced to get them back)."""
+        adv = not self.basic()
+
+        def form_row(form, field, *widgets):
+            lab = form.labelForField(field)
+            for w in ((lab,) if lab is not None else ()) + widgets:
+                w.setVisible(adv)
+        for k in ("filter", "pca", "vector"):
+            self.sec[k].setVisible(adv)
+        i = self.tabs.indexOf(self.p_lee.scroll)
+        if hasattr(self.tabs, "setTabVisible"):
+            if not adv and self.tabs.currentIndex() == i:
+                self.tabs.setCurrentIndex(0)
+            self.tabs.setTabVisible(i, adv)
+        self.ds_script_btn.setVisible(adv)
+        # unsupervised: K-means with k only
+        if not adv and self.u_method.currentData() != "kmeans":
+            self.u_method.setCurrentIndex(self.u_method.findData("kmeans"))
+        form_row(self.u_form, self.u_method, self.u_method)
+        form_row(self.u_form, self.u_iso_row, self.u_kmin, self.u_kmax)
+        form_row(self.u_form, self.u_it, self.u_it)
+        form_row(self.u_form, self.u_sample, self.u_sample)
+        form_row(self.u_form, self.u_maj, self.u_maj)
+        # supervised training: magic wand + drawing; WorldCover points and signatures are advanced
+        self.wc_toggle.setVisible(adv)
+        if not adv:
+            self.wc_toggle.setChecked(False)
+            self.jm_table.setVisible(False)
+        self.sig_box.setVisible(adv)
+        # supervised classify: one good algorithm, no extra parameters
+        if not adv:
+            k = "rf" if deps.has_module("sklearn") else "maxlik"
+            if self.clf.currentData() != k:
+                self.clf.setCurrentIndex(self.clf.findData(k))
+        form_row(self.clf_form, self.clf, self.clf)
+        form_row(self.clf_form, self.clf_param, self.clf_param_lab, self.clf_param)
+        form_row(self.clf_form, self.s_maj, self.s_maj)
+        if not adv:
+            self.s_algo_note.setText("<small>%s: <b>%s</b></small>" % (tr("Algorithm"), self.clf.currentText()))
+        self.s_algo_note.setVisible(not adv)
 
     def compact(self):
         """Let every widget shrink so the dock can be narrow: combo boxes do not size to their longest
         item, form labels go above their field when there is no room, long labels wrap."""
         policy = E(QComboBox, "SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon")
         for cb in self.findChildren(QComboBox):
-            if cb is self.lang:
+            if cb is self.lang or cb is self.mode:
                 continue
             cb.setSizeAdjustPolicy(policy)
             cb.setMinimumContentsLength(8)
@@ -868,8 +928,8 @@ class Panel(QWidget):
         self.ds_year.setRange(2000, 2030)
         self.ds_year.setValue(2023)
         mf.addRow(tr("Year (land cover)"), self.ds_year)
-        mf.addRow(row(btn(tr("Add to map"), self.add_dataset, primary=True),
-                      btn(tr("Open as script"), lambda: self.add_dataset(as_script=True))))
+        self.ds_script_btn = btn(tr("Open as script"), lambda: self.add_dataset(as_script=True))
+        mf.addRow(row(btn(tr("Add to map"), self.add_dataset, primary=True), self.ds_script_btn))
         self.local_items = []
         self.stac_scenes = None
         self.sensor.currentIndexChanged.connect(self.on_sensor)
@@ -2430,7 +2490,7 @@ class Panel(QWidget):
         sub(lay, tr("Training data"))
         gf = QFormLayout()
         lay.addLayout(gf)
-        gf.addRow(btn(tr("Create training layer (polygons)"), self.create_training, primary=True))
+        gf.addRow(btn(tr("Create training layer (polygons)"), self.create_training))
         self.t_layer = QgsMapLayerComboBox()
         self.t_layer.setObjectName("t_layer")
         set_layer_filters(self.t_layer, "polygon", "point")
@@ -2441,6 +2501,49 @@ class Panel(QWidget):
         self.t_layer.layerChanged.connect(self.t_field.setLayer)
         self.t_field.setLayer(self.t_layer.currentLayer())
         gf.addRow(tr("Class id field"), self.t_field)
+        # ---- click-to-grow ("magic wand"): one click = one training polygon of similar, connected pixels
+        self.mw_box = QWidget()
+        ml = QVBoxLayout(self.mw_box)
+        ml.setContentsMargins(0, 4, 0, 4)
+        ml.setSpacing(3)
+        mh = QLabel("<b>🪄 %s</b><br><small>%s</small>" % (
+            tr("Magic wand (click-to-grow)"),
+            tr("Pick a class, press Start, then click inside a field, a pond or a forest: similar connected "
+               "pixels around the click become a training polygon. No drawing needed.")))
+        mh.setWordWrap(True)
+        ml.addWidget(mh)
+        mwc = QWidget()
+        self.mw_flow = FlowLayout(mwc, spacing=3)
+        ml.addWidget(mwc)
+        mf = QFormLayout()
+        self.mw_tol = QDoubleSpinBox()
+        self.mw_tol.setObjectName("mw_tol")
+        self.mw_tol.setRange(0.2, 4.0)
+        self.mw_tol.setSingleStep(0.1)
+        self.mw_tol.setValue(1.0)
+        self.mw_tol.setToolTip(tr("Smaller = only very similar pixels (tight polygons); larger = grows further."))
+        self.mw_max = QDoubleSpinBox()
+        self.mw_max.setObjectName("mw_max")
+        self.mw_max.setRange(0.1, 500.0)
+        self.mw_max.setDecimals(1)
+        self.mw_max.setValue(5.0)
+        self.mw_max.setSuffix(" ha")
+        self.mw_max.setToolTip(tr("Largest polygon one click may create."))
+        mf.addRow(tr("Similarity tolerance"), self.mw_tol)
+        mf.addRow(tr("Max. area per click"), self.mw_max)
+        ml.addLayout(mf)
+        self.mw_start = btn(tr("Start clicking"), self.toggle_wand, primary=True)
+        self.mw_start.setCheckable(True)
+        self.mw_start.setStyleSheet(self.mw_start.styleSheet() + "QPushButton:checked{background:#c0392b}")
+        ml.addLayout(row(self.mw_start, btn(tr("Undo last"), self.wand_undo)))
+        self.mw_info = QLabel()
+        self.mw_info.setWordWrap(True)
+        self.mw_info.setStyleSheet("color:#356;font-size:11px")
+        ml.addWidget(self.mw_info)
+        gf.addRow(self.mw_box)
+        self.wand_tool, self.mw_class, self.mw_undo = None, None, []
+        self.mw_build_buttons()
+        self.t_layer.layerChanged.connect(lambda *_: self.mw_counts())
         # ---- automatic training points from ESA WorldCover (idea from the GEE LULC Toolkit "Auto LULC")
         self.wc_box = QWidget()
         wl = QVBoxLayout(self.wc_box)
@@ -2462,7 +2565,7 @@ class Panel(QWidget):
         wl.addLayout(wf)
         wl.addLayout(row(btn(tr("Get WorldCover for the AOI"), self.get_worldcover),
                          btn(tr("Make training points"), self.wc_training, primary=True)))
-        wbtn = QToolButton()
+        wbtn = self.wc_toggle = QToolButton()
         wbtn.setText(tr("Automatic training from ESA WorldCover"))
         wbtn.setCheckable(True)
         wbtn.setAutoRaise(True)
@@ -2473,10 +2576,14 @@ class Panel(QWidget):
         self.wc_box.setVisible(False)
         gf.addRow(wbtn)
         gf.addRow(self.wc_box)
-        gf.addRow(row(btn(tr("Signatures + separability"), self.run_signatures),
-                      btn(tr("Feature space plot"), self.feature_space)))
+        self.sig_box = QWidget()
+        sgf = QFormLayout(self.sig_box)
+        sgf.setContentsMargins(0, 0, 0, 0)
+        sgf.addRow(row(btn(tr("Signatures + separability"), self.run_signatures),
+                       btn(tr("Feature space plot"), self.feature_space)))
         self.fs_x, self.fs_y = self.band_combo("fs_x"), self.band_combo("fs_y")
-        gf.addRow(tr("Feature space X / Y"), row(self.fs_x, self.fs_y))
+        sgf.addRow(tr("Feature space X / Y"), row(self.fs_x, self.fs_y))
+        gf.addRow(self.sig_box)
         self.jm_table = table([tr("Class pair"), "J–M"], 110, hidden=True)
         lay.addWidget(self.jm_table)
         lay = P.section("sup_clf", tr("Supervised — classify")).lay
@@ -2484,7 +2591,9 @@ class Panel(QWidget):
         self.s_img_lab.setWordWrap(True)
         self.s_img_lab.setStyleSheet("color:#567;font-size:11px")
         lay.addWidget(self.s_img_lab)
-        gf = QFormLayout()
+        self.s_algo_note = QLabel()
+        lay.addWidget(self.s_algo_note)
+        gf = self.clf_form = QFormLayout()
         lay.addLayout(gf)
         self.clf = QComboBox()
         self.clf.setObjectName("clf")
@@ -2571,6 +2680,8 @@ class Panel(QWidget):
         """Class names changed → update the cluster → class drop-downs and the labelling buttons."""
         if getattr(self, "lb_flow", None) is not None:
             self.lb_build_buttons()
+        if getattr(self, "mw_flow", None) is not None:
+            self.mw_build_buttons()
         if getattr(self, "u_table", None) is not None and self.session.get("unsupervised"):
             self._save_recode()
             self.render_unsup()
@@ -2624,12 +2735,22 @@ class Panel(QWidget):
         self.render_classes()
 
     def create_training(self):
-        lyr = self.s_raster.currentLayer()
-        crs = lyr.crs() if lyr else self.canvas.mapSettings().destinationCrs()
         fn, _ = QFileDialog.getSaveFileName(self, tr("Save training layer"), os.path.join(self.out_dir(), "training.gpkg"),
                                             "GeoPackage (*.gpkg)")
         if not fn:
             return
+        vl = self._new_training_layer(fn)
+        vl.startEditing()
+        self.iface.setActiveLayer(vl)
+        self.iface.actionAddFeature().trigger()
+        self.msg(tr("Draw polygons; type the class id in the form. Save edits when finished."), "ok")
+
+    def _new_training_layer(self, fn):
+        """Empty polygon GeoPackage (class_id, class_name) in the image CRS, added and selected as training layer."""
+        lyr = self.s_raster.currentLayer()
+        crs = lyr.crs() if lyr else self.canvas.mapSettings().destinationCrs()
+        if os.path.exists(fn):
+            os.remove(fn)
         fields = QgsFields()
         fields.append(QgsField("class_id", _ftype("int")))
         fields.append(QgsField("class_name", _ftype("str")))
@@ -2645,10 +2766,169 @@ class Panel(QWidget):
         self.tag(vl, "Training areas")
         self.t_layer.setLayer(vl)
         self.t_field.setField("class_id")
-        vl.startEditing()
-        self.iface.setActiveLayer(vl)
-        self.iface.actionAddFeature().trigger()
-        self.msg(tr("Draw polygons; type the class id in the form. Save edits when finished."), "ok")
+        return vl
+
+    # ------------------------------------------------------------ magic wand (click-to-grow training areas)
+    def mw_build_buttons(self):
+        while self.mw_flow.count():
+            it = self.mw_flow.takeAt(0)
+            if it is not None and it.widget() is not None:
+                it.widget().deleteLater()
+        self.mw_buttons = {}
+        ids = [c[0] for c in self.classes()]
+        if self.mw_class not in ids:
+            self.mw_class = ids[0] if ids else None
+        for cid, n, col in self.classes():
+            b = QPushButton("%d %s" % (cid, tr(n)))
+            b.setCheckable(True)
+            dark = QColor(col).lightness() < 140
+            b.setStyleSheet("QPushButton{background:%s;color:%s;border:1px solid #888;border-radius:4px;padding:3px 7px}"
+                            "QPushButton:checked{border:3px solid #111;font-weight:bold}"
+                            % (col, "white" if dark else "black"))
+            b.setChecked(cid == self.mw_class)
+            b.clicked.connect(lambda _=False, c=cid: self.mw_pick(c))
+            self.mw_flow.addWidget(b)
+            self.mw_buttons[cid] = b
+        self.mw_counts()
+
+    def mw_pick(self, cid):
+        self.mw_class = cid
+        for c, b in self.mw_buttons.items():
+            b.setChecked(c == cid)
+        if self.wand_tool is None or self.canvas.mapTool() is not self.wand_tool:
+            self.toggle_wand()
+
+    def _wand_layer(self, create=True):
+        """The training layer if it is a polygon layer with class_id; else a new training_N.gpkg (no dialog)."""
+        vl = self.t_layer.currentLayer()
+        gt = vl.geometryType() if isinstance(vl, QgsVectorLayer) else None
+        if gt is not None and int(getattr(gt, "value", gt)) == 2 and vl.fields().indexOf("class_id") >= 0:
+            return vl
+        if not create:
+            return None
+        fn = os.path.join(self.out_dir(), "training.gpkg")
+        i = 1
+        while os.path.exists(fn):
+            fn = os.path.join(self.out_dir(), "training_%d.gpkg" % i)
+            i += 1
+        vl = self._new_training_layer(fn)
+        self.msg(tr("New training layer: %s") % fn, "ok")
+        return vl
+
+    def toggle_wand(self):
+        from qgis.gui import QgsMapToolEmitPoint
+        if self.wand_tool is not None and self.canvas.mapTool() is self.wand_tool:
+            self.canvas.unsetMapTool(self.wand_tool)
+            self._wand_state(False)
+            return
+        if layer_info(self.s_raster.currentLayer()) is None:
+            self._wand_state(False)
+            self.msg(tr("Choose an image file layer (not a web basemap)."), "warn")
+            return
+        if self.mw_class is None:
+            self._wand_state(False)
+            self.msg(tr("Set the classes first."), "warn")
+            return
+        if self.wand_tool is None:
+            self.wand_tool = QgsMapToolEmitPoint(self.canvas)
+            self.wand_tool.canvasClicked.connect(self.wand_click)
+            self.wand_tool.setCursor(E(Qt, "CursorShape.CrossCursor"))
+            self.wand_tool.deactivated.connect(lambda: self._wand_state(False))
+        self._wand_layer()
+        self.canvas.setMapTool(self.wand_tool)
+        self._wand_state(True)
+        self.msg(tr("Magic wand on: click inside an area of the chosen class. Click Start again to stop."))
+
+    def _wand_state(self, on):
+        try:
+            self.mw_start.setChecked(on)
+            self.mw_start.setText(tr("Stop clicking") if on else tr("Start clicking"))
+        except RuntimeError:                       # panel rebuilt (language change): old button is gone
+            LOG.debug("ignored error", exc_info=True)
+
+    def wand_click(self, pt, button=None):
+        from . import grow
+        from qgis.core import QgsFeature
+        lyr = self.s_raster.currentLayer()
+        path = layer_path(lyr)
+        if layer_info(lyr) is None or self.mw_class is None:
+            return
+        bands = checked_data(self.s_bands) or list(range(1, lyr.bandCount() + 1))
+        p = QgsCoordinateTransform(self.canvas.mapSettings().destinationCrs(), lyr.crs(),
+                                   QgsProject.instance()).transform(pt)
+        try:
+            m, info = grow.grow_region(path, bands, p.x(), p.y(), self.mw_tol.value(), max_ha=self.mw_max.value())
+        except Exception as e:  # noqa: BLE001
+            self.msg(str(e), "err")
+            return
+        if m is None:
+            self.msg(tr("Outside the image or no data there.") if info in ("outside", "nodata") else str(info), "warn")
+            return
+        if info["n"] < 4:
+            self.msg(tr("Only %d similar pixel(s) — raise the tolerance or click nearer the middle of the area.")
+                     % info["n"], "warn")
+            return
+        wkt = grow.mask_to_wkt(m, info)
+        if not wkt:
+            return
+        g = QgsGeometry.fromWkt(wkt)
+        vl = self._wand_layer()
+        if vl.crs() != lyr.crs():
+            g.transform(QgsCoordinateTransform(lyr.crs(), vl.crs(), QgsProject.instance()))
+        g.convertToMultiType()
+        name = next((n for c, n, _ in self.classes() if c == self.mw_class), "")
+        f = QgsFeature(vl.fields())
+        f.setGeometry(g)
+        f.setAttribute("class_id", int(self.mw_class))
+        if vl.fields().indexOf("class_name") >= 0:
+            f.setAttribute("class_name", name)
+        if vl.isEditable():
+            vl.addFeature(f)
+            fid = f.id()
+        else:
+            ok, out = vl.dataProvider().addFeatures([f])
+            if not ok or not out:
+                self.msg(tr("Could not add the polygon to the training layer."), "err")
+                return
+            fid = out[0].id()
+        self.mw_undo.append((vl.id(), fid))
+        vl.updateExtents()
+        vl.triggerRepaint()
+        ha = info["n"] * grow.pixel_area_m2(path, p.y()) / 10000.0
+        capped = " — " + tr("reached the max. area") if info.get("capped") else ""
+        self.msg(tr("%s: %d pixels (%.2f ha)") % (tr(name), info["n"], ha) + capped, "ok")
+        self.mw_counts()
+
+    def wand_undo(self):
+        while self.mw_undo:
+            lid, fid = self.mw_undo.pop()
+            vl = QgsProject.instance().mapLayer(lid)
+            if vl is None:
+                continue
+            if vl.isEditable():
+                vl.deleteFeature(fid)
+            else:
+                vl.dataProvider().deleteFeatures([fid])
+            vl.triggerRepaint()
+            self.msg(tr("Removed the last polygon."))
+            break
+        self.mw_counts()
+
+    def mw_counts(self):
+        vl = self._wand_layer(create=False)
+        if vl is None:
+            self.mw_info.setText("<small>%s</small>" % tr("A training layer is created automatically at the first click."))
+            return
+        cnt = {}
+        for f in vl.getFeatures():
+            try:
+                k = int(f["class_id"])
+            except (TypeError, ValueError, KeyError):
+                continue
+            cnt[k] = cnt.get(k, 0) + 1
+        names = {c[0]: tr(c[1]) for c in self.classes()}
+        txt = ", ".join("%s %d" % (names.get(k, k), v) for k, v in sorted(cnt.items())) or "—"
+        self.mw_info.setText("<small>%s (%s): %s</small>" % (tr("Polygons per class"), vl.name(), txt))
 
     def get_worldcover(self):
         if self.aoi_geom is None:
@@ -4019,7 +4299,7 @@ class Panel(QWidget):
         for n in keys:
             w = widgets.get(n)
             v = st[n]
-            if w is None or v is None or n == "_lang":
+            if w is None or v is None or n in ("_lang", "_mode"):
                 continue
             try:
                 if isinstance(w, QgsMapLayerComboBox):
@@ -4067,6 +4347,7 @@ class Panel(QWidget):
             self.apply_aoi_crs()
             self.aoi_lab.setText("<b>%s</b> — %.1f km²" % (self.session.get("aoi_label", ""),
                                                            self.session.get("aoi_km2", 0)))
+        self.apply_mode()
 
     def rerender(self):
         self.render_pca()
@@ -4131,6 +4412,6 @@ class Panel(QWidget):
             except RuntimeError:
                 LOG.debug("ignored error", exc_info=True)
             self.lb_marker = None
-        for t in (self.rect_tool, self.profile_tool):
+        for t in (self.rect_tool, self.profile_tool, getattr(self, "wand_tool", None)):
             if t is not None and self.canvas.mapTool() is t:
                 self.canvas.unsetMapTool(t)
