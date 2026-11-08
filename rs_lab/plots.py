@@ -197,7 +197,8 @@ class ChartDialog(QDialog):
     def done_(self):
         if self.fig is not None:
             try:
-                self.fig.tight_layout()
+                if not getattr(self, "no_tight", False):
+                    self.fig.tight_layout()
             except Exception:  # noqa: BLE001
                 LOG.debug("ignored error", exc_info=True)
             _khmerize(self.fig)
@@ -210,25 +211,63 @@ def _short(d):
     return d.split("|")[0].strip()
 
 
+_RADAR = None
+
+
+def _is_radar(label):
+    """Sentinel-1 / SAR bands in dB (VV, VH, VH_dry, 'VV | vv', '... dB')."""
+    import re
+    global _RADAR
+    if _RADAR is None:
+        _RADAR = re.compile(r"(^|[^A-Za-z])(VV|VH|HH|HV)([^A-Za-z]|$)|\bdB\b")
+    return bool(_RADAR.search(str(label)))
+
+
+def _sig_panel(ax, x, labels, series, idx, ylabel):
+    for lab, vals, col, sd in series:
+        v = np.asarray(vals, float)[idx]
+        ax.plot(x, v, marker="o", label=lab, color=col)
+        if sd is not None:
+            s = np.asarray(sd, float)[idx]
+            ax.fill_between(x, v - s, v + s, alpha=0.12, color=col)
+    ax.set_xticks(x)
+    ax.set_xticklabels([_short(labels[i]) for i in idx], rotation=45, ha="right")
+    ax.set_ylabel(ylabel)
+    ax.grid(alpha=0.3)
+
+
 def plot_signatures(title, band_labels, series, parent=None):
-    """series: list of (label, values, color or None, stds or None)."""
+    """series: list of (label, values, color or None, stds or None).
+    When optical bands / indices are mixed with radar bands in dB (e.g. the multi-season stack), the radar
+    bands are drawn in a second panel with their own dB axis — on one axis the dB values (−25…−5) squash
+    indices (−1…1) into a flat line."""
     dlg = ChartDialog(title, parent)
     if dlg.fig is None:
         dlg.show()
         return dlg
-    ax = dlg.fig.add_subplot(111)
-    ax.set_title(title, fontsize=11, loc="left")
-    x = np.arange(len(band_labels))
-    for lab, vals, col, sd in series:
-        ax.plot(x, vals, marker="o", label=lab, color=col)
-        if sd is not None:
-            ax.fill_between(x, np.array(vals) - sd, np.array(vals) + sd, alpha=0.12, color=col)
-    ax.set_xticks(x)
-    ax.set_xticklabels([_short(b) for b in band_labels], rotation=45, ha="right")
-    ax.set_ylabel("Value (reflectance / DN)")
-    ax.set_xlabel("Band")
-    ax.grid(alpha=0.3)
-    ax.legend(fontsize=8)
+    n = len(band_labels)
+    rad = [i for i in range(n) if _is_radar(band_labels[i])]
+    opt = [i for i in range(n) if i not in rad]
+    if rad and opt:
+        gs = dlg.fig.add_gridspec(1, 2, width_ratios=[max(len(opt), 2), max(len(rad), 1.5)], wspace=0.28)
+        ax = dlg.fig.add_subplot(gs[0, 0])
+        ax2 = dlg.fig.add_subplot(gs[0, 1])
+        _sig_panel(ax, np.arange(len(opt)), band_labels, series, opt, "Value (reflectance / index)")
+        _sig_panel(ax2, np.arange(len(rad)), band_labels, series, rad, "Backscatter (dB)")
+        ax2.set_title("Radar", fontsize=9, loc="left")
+        ax.set_title(title, fontsize=11, loc="left")
+        ax.set_xlabel("Band")
+        h, l = ax.get_legend_handles_labels()
+        ax2.legend(h, l, fontsize=7, loc="center left", bbox_to_anchor=(1.02, 0.5), borderaxespad=0)
+        dlg.fig.subplots_adjust(left=0.08, right=0.85, bottom=0.27, top=0.9, wspace=0.28)
+        dlg.no_tight = True                  # tight_layout cannot handle the outside legend
+    else:
+        ax = dlg.fig.add_subplot(111)
+        ax.set_title(title, fontsize=11, loc="left")
+        _sig_panel(ax, np.arange(n), band_labels, series, list(range(n)),
+                   "Backscatter (dB)" if rad else "Value (reflectance / DN)")
+        ax.set_xlabel("Band")
+        ax.legend(fontsize=8)
     dlg.done_()
     return dlg
 

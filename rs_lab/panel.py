@@ -1,6 +1,7 @@
 """Main dock panel: Setup · Download · Composite · Indices · Filters/PCA · Unsupervised ·
 Supervised · Accuracy · Change.  Rebuilt in place when the language changes."""
 import csv
+import math
 import os
 import random
 import re
@@ -3262,7 +3263,7 @@ class Panel(QWidget):
     def make_layout(self):
         from qgis.core import (Qgis, QgsApplication, QgsLayoutItemLabel, QgsLayoutItemLegend, QgsLayoutItemMap,
                                QgsLayoutItemPicture, QgsLayoutItemScaleBar, QgsLayoutPoint, QgsLayoutSize,
-                               QgsPrintLayout, QgsRectangle, QgsUnitTypes)
+                               QgsPrintLayout, QgsRectangle, QgsScaleBarSettings, QgsUnitTypes)
         try:
             MM = Qgis.LayoutUnit.Millimeters
         except AttributeError:
@@ -3338,11 +3339,37 @@ class Panel(QWidget):
         sb = QgsLayoutItemScaleBar(L)
         sb.setStyle("Single Box")
         sb.setLinkedMap(mp)
+        # Explicit, "nice" segment length: applyDefaultSize() reset the units to map units (metres) and
+        # chose segments so short that the labels overlapped ("2,5005,000 m").
+        sb.applyDefaultSize(KM)
         sb.setUnits(KM)
         sb.setUnitLabel("km")
-        sb.setNumberOfSegments(4)
+        sb.setMapUnitsPerScaleBarUnit(1000.0)
+        try:
+            width_km = mp.extent().width() / 1000.0
+            if mp.crs().isGeographic():                 # degrees → km (≈111.32 km per degree)
+                width_km = mp.extent().width() * 111.32
+        except Exception:  # noqa: BLE001
+            width_km = 10.0
+        raw = max(width_km / 8.0, 0.001)            # 2 segments ≈ a quarter of the map width
+        mag = 10 ** math.floor(math.log10(raw))
+        step = next(f * mag for f in (1, 2, 5, 10) if f * mag >= raw)
+        try:
+            sb.setSegmentSizeMode(EA((Qgis, "ScaleBarSegmentSizeMode.Fixed"),
+                                     (QgsScaleBarSettings, "SegmentSizeMode.SegmentSizeFixed")))
+        except Exception:  # noqa: BLE001
+            LOG.debug("ignored error", exc_info=True)
+        sb.setUnitsPerSegment(step)
+        sb.setNumberOfSegments(2)
         sb.setNumberOfSegmentsLeft(0)
-        sb.applyDefaultSize()
+        sb.setHeight(2.5)
+        try:
+            fmt = sb.textFormat()
+            fmt.setSize(8)
+            sb.setTextFormat(fmt)
+        except Exception:  # noqa: BLE001
+            LOG.debug("ignored error", exc_info=True)
+        sb.update()
         L.addLayoutItem(sb)
         sb.attemptMove(QgsLayoutPoint(m, 22 + mh + 3, MM))
         # legend
@@ -3594,15 +3621,16 @@ class Panel(QWidget):
             m &= fr == a
         if b is not None:
             m &= to == b
-        names = {c[0]: c[1] for c in self.classes()}
-        tag = "%s → %s" % (names.get(a, "any") if a is not None else "any", names.get(b, "any") if b is not None else "any")
+        names = {c[0]: tr(c[1]) for c in self.classes()}   # class names in the current language
+        tag = "%s → %s" % (names.get(a, tr("any")) if a is not None else tr("any"),
+                          names.get(b, tr("any")) if b is not None else tr("any"))
         out = os.path.join(self.out_dir(), "transition_%s_%s.tif" % (a if a is not None else "any",
                                                                      b if b is not None else "any"))
         rio.write_array(out, m.astype("uint8"), info, gdal.GDT_Byte, 0)
         col = next((c[2] for c in self.classes() if c[0] == b), "#e31a1c")
         lyr = rio.add_class_layer(out, self.name("Change", " " + tag), [(1, "%s → %s", col,
-                                  [names.get(a, "any class") if a is not None else "any class",
-                                   names.get(b, "any class") if b is not None else "any class"])], tr(GROUP))
+                                  [names.get(a, tr("any class")) if a is not None else tr("any class"),
+                                   names.get(b, tr("any class")) if b is not None else tr("any class")])], tr(GROUP))
         self.tag(lyr, "Change", " " + tag)
         self.msg(tr("%s: %.1f ha") % (tag, m.sum() * info.pixel_area / 1e4), "ok")
 
