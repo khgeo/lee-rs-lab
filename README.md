@@ -25,11 +25,12 @@ Read online: **https://khgeo.github.io/lee-rs-lab/** · PDF: [lee-rs-lab-manual-
 | 1–4 | Area of interest · search scenes · composite & download · DEM and other datasets |
 | 5–7 | Band combinations & stretch · NDVI / MNDWI · filters & PCA |
 | 8–11 | K-means · training data · Random Forest and 6 other classifiers · accuracy |
-| 12–13 | Clean-up, polygons & map layout · from → to change 2024 → 2026 with Sankey |
+| 12–13 | Clean-up, polygons & map layout · from → to change 2020 → 2026 with Sankey |
 | 14–15 | LEE scripts (land surface temperature, Sentinel-1 rice calendar) · PDF report |
 
-Every lesson uses one real example — Moha Khnhoung commune, Kaoh Soutin, Kampong Cham — with annotated screenshots
-whose red numbers match the steps.
+Lessons 1–13 use one real example — Kampong Tralach district, Kampong Chhnang (464.6 km², Tonle Sap river) — with
+Landsat 9 (2026) and Landsat 8 (2020) screenshots of the Khmer interface; lessons 14–15 keep the earlier Moha Khnhoung
+commune example.
 
 ## Install the plugin
 
