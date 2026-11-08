@@ -1,0 +1,21 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+    paths: ["rs_lab/**", "tests/**", ".github/workflows/tests.yml"]
+  pull_request:
+    paths: ["rs_lab/**", "tests/**", ".github/workflows/tests.yml"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python, NumPy, GDAL and pytest (system packages, as QGIS uses them)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq python3-numpy python3-gdal python3-pytest
+      - name: Run tests (algorithms, magic wand, translations, lessons, metadata — no QGIS needed)
+        run: python3 -m pytest -v tests

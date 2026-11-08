@@ -744,5 +744,6 @@
  "reached the max. area": "ដល់ផ្ទៃអតិបរមា",
  "Removed the last polygon.": "បានលុបពហុកោណចុងក្រោយ។",
  "A training layer is created automatically at the first click.": "ស្រទាប់ហ្វឹកហាត់ត្រូវបានបង្កើតដោយស្វ័យប្រវត្តិនៅពេលចុចលើកដំបូង។",
- "Polygons per class": "ចំនួនពហុកោណតាមថ្នាក់"
+ "Polygons per class": "ចំនួនពហុកោណតាមថ្នាក់",
+ "%s — finished.": "%s — បានបញ្ចប់។"
 }

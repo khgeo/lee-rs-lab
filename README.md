@@ -54,13 +54,27 @@ docs/                      Manual (MkDocs Material) → GitHub Pages
   index.md, lessons/       15 lessons
   assets/img/              annotated screenshots and charts
   downloads/               PDF of the manual
+tests/                     pytest suite (no QGIS needed)
+paper/                     JOSE paper draft (paper.md, paper.bib)
 mkdocs.yml
 .github/workflows/
   deploy.yml               builds the manual on every push to main
   release.yml              push to main → release v<version> with lee_rs_lab.zip + PDF
+  tests.yml                runs the tests on every change to rs_lab/ or tests/
+  draft-pdf.yml            builds the paper PDF (Open Journals draft action)
 ```
 
 Release a new version: raise `version=` in `rs_lab/metadata.txt` and push to `main` — the workflow creates release v<version> with the zip and the PDF.
+
+## Tests and contributing
+
+```bash
+python -m pytest -q tests      # NumPy algorithms, magic wand, Olofsson example, Khmer translation, metadata
+```
+
+The tests cover the parts that do not need QGIS; GDAL tests are skipped when GDAL is not installed. They run
+on GitHub Actions for every change. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to report problems, ask for
+help (English or Khmer) and propose changes.
 
 ## Author and licences
 

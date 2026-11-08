@@ -1,0 +1,23 @@
+name: JOSE paper draft
+
+on:
+  push:
+    paths: ["paper/**", ".github/workflows/draft-pdf.yml"]
+  workflow_dispatch:
+
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    name: Paper draft (Open Journals)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build draft PDF
+        uses: openjournals/openjournals-draft-action@master
+        with:
+          journal: jose
+          paper-path: paper/paper.md
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper
+          path: paper/paper.pdf
