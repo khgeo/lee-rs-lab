@@ -281,10 +281,33 @@ class VectorAdmin:
                 g.Transform(tr4326)
             geoms.append(QgsGeometry.fromWkt(g.ExportToWkt()))
         ds = None
-        return QgsGeometry.unaryUnion(geoms) if geoms else None
+        return dissolve(geoms, fill_holes=code is None) if geoms else None
 
     def describe(self):
         return ", ".join("L%d: %s (%s)" % (k, os.path.basename(v["path"]), v["layer"]) for k, v in sorted(self.layers.items()))
+
+
+def dissolve(geoms, close_deg=0.005, fill_holes=True):
+    """Union of several admin units as ONE clean outline (EPSG:4326 degrees).
+
+    Boundary datasets often have thin gaps or overlaps between neighbouring units (digitised separately) and
+    leave lakes or rivers out (Tonle Sap). A plain union then keeps slivers, notches and holes, which show as
+    lines inside the AOI. A small morphological closing (buffer +d then −d, d ≈ 550 m) closes the gaps without
+    moving the outer border; with fill_holes the interior holes are filled too (a whole country or layer; not for
+    one unit, which may enclose another, e.g. Kandal around Phnom Penh)."""
+    g = QgsGeometry.unaryUnion(geoms)
+    if len(geoms) < 2 or g is None or g.isEmpty():
+        return g
+    c = g.buffer(close_deg, 4)
+    c = c.buffer(-close_deg, 4) if c is not None and not c.isEmpty() else None
+    if c is None or c.isEmpty() or c.area() < 0.98 * g.area():       # closing failed: keep the plain union
+        c = g
+    filled = c.removeInteriorRings() if fill_holes else None
+    if filled is not None and not filled.isEmpty():
+        c = filled
+    if not c.isGeosValid():
+        c = c.makeValid()
+    return c
 
 
 class CkanAdmin(VectorAdmin):

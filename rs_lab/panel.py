@@ -1101,6 +1101,9 @@ class Panel(QWidget):
                 self.msg(tr("The layer has no features."), "warn")
                 return
             g = QgsGeometry.unaryUnion([f.geometry() for f in feats])
+            if len(feats) > 1 and lyr.crs().isGeographic():            # several units: one clean outline
+                from .aoi import dissolve
+                g = dissolve([f.geometry() for f in feats], fill_holes=False)
             self._set_aoi_geom(g, lyr.crs(), "%s (%d)" % (lyr.name(), len(feats)))
         else:
             self.admin_aoi()
